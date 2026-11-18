@@ -1,21 +1,37 @@
 // ============================================================================
-// APP.JS — MOTORE LOGICO, RICERCA GLOBALE E RENDERING UI (MORPHO CODEX)
+// APP.JS v3.0 — MOTORE OMNI-SEARCH, EVIDENZIAZIONE, PREFERITI & SVG ROUTING
 // ============================================================================
 
-// Unione dei 3 Database Enciclopedici in un unico Array Master
-const MASTER_ENCYCLOPEDIA = [
-    ...(typeof ENCYCLOPEDIA_PART_1 !== 'undefined' ? ENCYCLOPEDIA_PART_1 : []),
-    ...(typeof ENCYCLOPEDIA_PART_2 !== 'undefined' ? ENCYCLOPEDIA_PART_2 : []),
-    ...(typeof ENCYCLOPEDIA_PART_3 !== 'undefined' ? ENCYCLOPEDIA_PART_3 : [])
-];
+// Unione dinamica dei 3 Database Enciclopedici
+function getMasterEncyclopedia() {
+    return [
+        ...(typeof ENCYCLOPEDIA_PART_1 !== 'undefined' ? ENCYCLOPEDIA_PART_1 : []),
+        ...(typeof ENCYCLOPEDIA_PART_2 !== 'undefined' ? ENCYCLOPEDIA_PART_2 : []),
+        ...(typeof ENCYCLOPEDIA_PART_3 !== 'undefined' ? ENCYCLOPEDIA_PART_3 : [])
+    ];
+}
+
+// Dizionario di espansione semantica (traduce lo slang nei termini clinici del database)
+const SEMANTIC_SYNONYMS = {
+    "mewing": ["lingua", "palato", "miofunzionale", "deglutizione", "palatoglosso"],
+    "hollow": ["ogee", "fossa canina", "buccinatori", "zigomi", "malare"],
+    "hunter": ["canthal", "deep-set", "uee", "sopraorbitale", "pfl"],
+    "prey": ["scleral", "vettore negativo", "uee", "decompressione"],
+    "bloat": ["potassio", "sodio", "aldosterone", "ritenzione", "linfatico", "debloating"],
+    "jawline": ["mandibola", "goniale", "bigoniale", "gonion", "ioide", "mento"],
+    "acne": ["retinoidi", "tretinoina", "azelaico", "salicilico", "sebo", "barriera"],
+    "calvizie": ["alopecia", "dht", "finasteride", "minoxidil", "norwood", "fue"]
+};
 
 // Stato Globale dell'Applicazione
 let currentMainView = 'enciclopedia';
 let currentCategoryFilter = 'all';
+let currentApproachFilter = 'all'; // 'all' | 'softmax' | 'hardmax'
 let currentAtlasFilter = 'all';
 let globalSearchQuery = '';
+let savedFavorites = [];
 
-// Colori dinamici per i badge delle categorie
+// Stili cromatici per i badge dei 10 distretti anatomici
 const CATEGORY_COLORS = {
     "Osteologia & Struttura Ossea": "text-cyanClin bg-cyanClin/10 border-cyanClin/30",
     "Terzo Inferiore & Mandibola": "text-emeraldClin bg-emeraldClin/10 border-emeraldClin/30",
@@ -30,41 +46,193 @@ const CATEGORY_COLORS = {
 };
 
 // ============================================================================
-// 1. INIZIALIZZAZIONE E CONTATORI SIDEBAR
+// 1. INIZIALIZZAZIONE, LOCALSTORAGE E SCORCIATOIE DA TASTIERA
 // ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
+    loadFavoritesFromStorage();
     initCounters();
     renderCategorySidebar();
     renderAllViews();
+    setupKeyboardShortcuts();
+    checkUrlHashOnLoad();
 
-    // Listener per la barra di ricerca globale in tempo reale
     const searchInput = document.getElementById('global-search');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            globalSearchQuery = e.target.value.trim().toLowerCase();
+            globalSearchQuery = e.target.value.trim();
+            updateClearButtonVisibility();
             renderAllViews();
         });
     }
 });
 
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        const searchInput = document.getElementById('global-search');
+        // Ctrl+K o Cmd+K attiva la barra di ricerca
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+        // ESC pulisce la ricerca o chiude la sidebar mobile
+        if (e.key === 'Escape') {
+            if (globalSearchQuery !== '') {
+                resetFilters();
+            }
+            const sidebar = document.getElementById('app-sidebar');
+            if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                toggleMobileSidebar();
+            }
+        }
+    });
+}
+
+function checkUrlHashOnLoad() {
+    const hash = window.location.hash.replace('#', '');
+    if (!hash) return;
+    if (['enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'].includes(hash)) {
+        switchMainView(hash);
+    } else {
+        // Se l'hash è l'ID di una scheda specifica (es. #osteo-01), cercala
+        const master = getMasterEncyclopedia();
+        const found = master.find(item => item.id === hash);
+        if (found) {
+            triggerQuickSearch(found.title);
+        }
+    }
+}
+
+// ============================================================================
+// 2. MOTORE DI RICERCA MULTI-TOKEN & EVIDENZIAZIONE TESTO (<mark>)
+// ============================================================================
+function matchesQuery(textToSearch, rawQuery) {
+    if (!rawQuery) return true;
+    const cleanText = textToSearch.toLowerCase();
+    const tokens = rawQuery.toLowerCase().split(/\s+/).filter(Boolean);
+
+    return tokens.every(token => {
+        if (cleanText.includes(token)) return true;
+        // Verifica sinonimi semantici (slang -> scienza)
+        for (const [slang, medicalTerms] of Object.entries(SEMANTIC_SYNONYMS)) {
+            if (slang.includes(token) || token.includes(slang)) {
+                if (medicalTerms.some(med => cleanText.includes(med))) return true;
+            }
+        }
+        return false;
+    });
+}
+
+function highlightText(text, rawQuery) {
+    if (!rawQuery || !text) return text;
+    const tokens = rawQuery.trim().split(/\s+/).filter(t => t.length >= 2);
+    if (tokens.length === 0) return text;
+
+    // Escape caratteri speciali regex
+    const escapedTokens = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const regex = new RegExp(`(${escapedTokens.join('|')})`, 'gi');
+    return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+}
+
+function triggerQuickSearch(term) {
+    const searchInput = document.getElementById('global-search');
+    globalSearchQuery = term;
+    if (searchInput) {
+        searchInput.value = term;
+    }
+    updateClearButtonVisibility();
+    renderAllViews();
+}
+
+function updateClearButtonVisibility() {
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (clearBtn) {
+        clearBtn.classList.toggle('hidden', globalSearchQuery.length === 0);
+    }
+}
+
+// ============================================================================
+// 3. GESTIONE PREFERITI ("IL MIO PIANO DI STUDIO" IN LOCALSTORAGE)
+// ============================================================================
+function loadFavoritesFromStorage() {
+    try {
+        const stored = localStorage.getItem('morpho_codex_favorites');
+        savedFavorites = stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        savedFavorites = [];
+    }
+    updateFavoriteCounters();
+}
+
+function toggleFavorite(itemId) {
+    const index = savedFavorites.indexOf(itemId);
+    if (index === -1) {
+        savedFavorites.push(itemId);
+    } else {
+        savedFavorites.splice(index, 1);
+    }
+    try {
+        localStorage.setItem('morpho_codex_favorites', JSON.stringify(savedFavorites));
+    } catch (e) {}
+    updateFavoriteCounters();
+    renderAllViews();
+}
+
+function clearAllFavorites() {
+    savedFavorites = [];
+    try {
+        localStorage.removeItem('morpho_codex_favorites');
+    } catch (e) {}
+    updateFavoriteCounters();
+    renderAllViews();
+}
+
+function updateFavoriteCounters() {
+    const countFavSidebar = document.getElementById('count-fav');
+    const countFavHeader = document.getElementById('count-fav-header');
+    if (countFavSidebar) countFavSidebar.innerText = savedFavorites.length;
+    if (countFavHeader) countFavHeader.innerText = savedFavorites.length;
+}
+
+// ============================================================================
+// 4. CONTATORI, SIDEBAR E NAVIGAZIONE VISTE
+// ============================================================================
 function initCounters() {
+    const master = getMasterEncyclopedia();
     const encCount = document.getElementById('count-enc');
+    const atlCount = document.getElementById('count-atl');
     const faqCount = document.getElementById('count-faq');
     const protCount = document.getElementById('count-prot');
     const debCount = document.getElementById('count-deb');
 
-    if (encCount) encCount.innerText = MASTER_ENCYCLOPEDIA.length;
+    if (encCount) encCount.innerText = master.length;
+    if (atlCount && typeof ATLAS_38_RATIOS !== 'undefined') atlCount.innerText = ATLAS_38_RATIOS.length;
     if (faqCount && typeof FAQ_DATABASE_COMPLETE !== 'undefined') faqCount.innerText = FAQ_DATABASE_COMPLETE.length;
     if (protCount && typeof PROTOCOLS_COMPLETE !== 'undefined') protCount.innerText = PROTOCOLS_COMPLETE.length;
     if (debCount && typeof DEBUNKING_COMPLETE !== 'undefined') debCount.innerText = DEBUNKING_COMPLETE.length;
+    updateFavoriteCounters();
 }
 
-// ============================================================================
-// 2. GESTIONE NAVIGAZIONE VISTE E CATEGORIE
-// ============================================================================
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('app-sidebar');
+    const backdrop = document.getElementById('mobile-sidebar-backdrop');
+    if (!sidebar || !backdrop) return;
+
+    const isHidden = sidebar.classList.contains('-translate-x-full');
+    if (isHidden) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+    }
+}
+
 function switchMainView(viewName) {
     currentMainView = viewName;
-    const views = ['enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking'];
+    const views = ['enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'];
 
     views.forEach(v => {
         const section = document.getElementById(`view-${v}`);
@@ -78,18 +246,28 @@ function switchMainView(viewName) {
             if (v === viewName) {
                 if (v === 'debunking') {
                     navBtn.className = "w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold bg-roseClin/15 text-roseClin border border-roseClin/40 flex items-center justify-between transition";
+                } else if (v === 'preferiti') {
+                    navBtn.className = "w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold bg-amberClin/15 text-amberClin border border-amberClin/40 flex items-center justify-between transition";
                 } else {
                     navBtn.className = "w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold bg-cyanClin/10 text-cyanClin border border-cyanClin/30 flex items-center justify-between transition";
                 }
             } else {
                 if (v === 'debunking') {
                     navBtn.className = "w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-roseClin/80 hover:bg-roseClin/10 hover:text-roseClin flex items-center justify-between transition";
+                } else if (v === 'preferiti') {
+                    navBtn.className = "w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-amberClin/80 hover:bg-amberClin/10 hover:text-amberClin flex items-center justify-between transition";
                 } else {
                     navBtn.className = "w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition";
                 }
             }
         }
     });
+
+    // Chiudi drawer mobile se aperto
+    const sidebar = document.getElementById('app-sidebar');
+    if (sidebar && !sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
+        toggleMobileSidebar();
+    }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
     renderAllViews();
@@ -106,20 +284,38 @@ function selectCategory(categoryName) {
     }
 }
 
+function setApproachFilter(approach) {
+    currentApproachFilter = approach;
+    const btns = {
+        'all': document.getElementById('btn-app-all'),
+        'softmax': document.getElementById('btn-app-softmax'),
+        'hardmax': document.getElementById('btn-app-hardmax')
+    };
+    Object.keys(btns).forEach(k => {
+        if (!btns[k]) return;
+        if (k === approach) {
+            btns[k].className = "px-3 py-1 rounded-lg text-xs font-mono bg-cyanClin text-bgMain font-semibold transition";
+        } else {
+            btns[k].className = "px-3 py-1 rounded-lg text-xs font-mono text-gray-400 hover:text-white transition";
+        }
+    });
+    renderEncyclopedia();
+}
+
 function renderCategorySidebar() {
     const container = document.getElementById('category-sidebar');
     if (!container) return;
 
-    // Estrai categorie uniche e conta gli articoli per ciascuna
+    const master = getMasterEncyclopedia();
     const categories = {};
-    MASTER_ENCYCLOPEDIA.forEach(item => {
+    master.forEach(item => {
         categories[item.category] = (categories[item.category] || 0) + 1;
     });
 
     let html = `
         <button onclick="selectCategory('all')" class="w-full text-left px-3 py-2 rounded-lg text-xs font-mono flex items-center justify-between transition ${currentCategoryFilter === 'all' ? 'bg-bgCard text-white border border-borderDark font-semibold' : 'text-gray-400 hover:bg-bgCard/50 hover:text-gray-200'}">
-            <span>Tutti i Distretti</span>
-            <span class="text-cyanClin">${MASTER_ENCYCLOPEDIA.length}</span>
+            <span>Tutti i 10 Distretti</span>
+            <span class="text-cyanClin">${master.length}</span>
         </button>
     `;
 
@@ -137,98 +333,170 @@ function renderCategorySidebar() {
 }
 
 // ============================================================================
-// 3. FUNZIONI DI RENDERING PER LE 5 SEZIONI
+// 5. BANNER DI RICERCA TRASVERSALE (OMNI-SEARCH CROSS-VIEW)
+// ============================================================================
+function renderCrossSearchBanner() {
+    const banner = document.getElementById('cross-search-banner');
+    const termEl = document.getElementById('cross-search-term');
+    const pillsEl = document.getElementById('cross-search-pills');
+    const searchCountEl = document.getElementById('search-count');
+
+    if (!banner || !termEl || !pillsEl) return;
+
+    if (!globalSearchQuery) {
+        banner.classList.add('hidden');
+        if (searchCountEl) searchCountEl.innerText = '';
+        return;
+    }
+
+    const master = getMasterEncyclopedia();
+    const encMatches = master.filter(item => matchesQuery(`${item.title} ${item.subtitle} ${item.category} ${item.summary} ${item.details.join(' ')} ${item.solutions}`, globalSearchQuery)).length;
+    const atlMatches = (typeof ATLAS_38_RATIOS !== 'undefined' ? ATLAS_38_RATIOS : []).filter(r => matchesQuery(`${r.name} ${r.ideal} ${r.level} ${r.desc}`, globalSearchQuery)).length;
+    const faqMatches = (typeof FAQ_DATABASE_COMPLETE !== 'undefined' ? FAQ_DATABASE_COMPLETE : []).filter(f => matchesQuery(`${f.q} ${f.tag} ${f.a}`, globalSearchQuery)).length;
+    const protMatches = (typeof PROTOCOLS_COMPLETE !== 'undefined' ? PROTOCOLS_COMPLETE : []).filter(p => matchesQuery(`${p.title} ${p.badge} ${p.desc} ${p.sections.map(s => s.subtitle + ' ' + s.items.join(' ')).join(' ')}`, globalSearchQuery)).length;
+    const debMatches = (typeof DEBUNKING_COMPLETE !== 'undefined' ? DEBUNKING_COMPLETE : []).filter(d => matchesQuery(`${d.title} ${d.riskLevel} ${d.myth} ${d.reality}`, globalSearchQuery)).length;
+
+    const totalMatches = encMatches + atlMatches + faqMatches + protMatches + debMatches;
+    if (searchCountEl) searchCountEl.innerText = `${totalMatches} risultati`;
+
+    banner.classList.remove('hidden');
+    termEl.innerText = `"${globalSearchQuery}"`;
+
+    pillsEl.innerHTML = `
+        <button onclick="switchMainView('enciclopedia')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'enciclopedia' ? 'bg-cyanClin text-bgMain border-cyanClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-cyanClin'}">
+            Enciclopedia (${encMatches})
+        </button>
+        <button onclick="switchMainView('atlante')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'atlante' ? 'bg-emeraldClin text-bgMain border-emeraldClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-emeraldClin'}">
+            Atlante 38 Rapporti (${atlMatches})
+        </button>
+        <button onclick="switchMainView('faq')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'faq' ? 'bg-amberClin text-bgMain border-amberClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-amberClin'}">
+            FAQ (${faqMatches})
+        </button>
+        <button onclick="switchMainView('protocolli')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'protocolli' ? 'bg-cyanClin text-bgMain border-cyanClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-cyanClin'}">
+            Guide Pratiche (${protMatches})
+        </button>
+        <button onclick="switchMainView('debunking')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'debunking' ? 'bg-roseClin text-white border-roseClin font-bold' : 'bg-bgCard border-borderDark text-roseClin/80 hover:border-roseClin'}">
+            Debunking (${debMatches})
+        </button>
+    `;
+}
+
+// ============================================================================
+// 6. FUNZIONI DI RENDERING PER LE 6 SEZIONI
 // ============================================================================
 function renderAllViews() {
+    initCounters();
+    renderCrossSearchBanner();
     renderEncyclopedia();
     renderAtlas(currentAtlasFilter);
     renderFAQView();
     renderProtocolsView();
     renderDebunkingView();
+    renderFavoritesView();
+}
+
+// Helper per generare l'HTML di una Card Enciclopedica
+function buildEncyclopediaCardHTML(item) {
+    const badgeStyle = CATEGORY_COLORS[item.category] || "text-cyanClin bg-cyanClin/10 border-cyanClin/30";
+    const isFav = savedFavorites.includes(item.id);
+
+    return `
+        <article id="${item.id}" class="bg-bgPanel border border-borderDark rounded-2xl p-6 sm:p-7 hover:border-borderDark/90 transition shadow-lg">
+            <!-- Header Card -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-mono text-[11px] px-2.5 py-1 rounded border ${badgeStyle}">
+                        ${highlightText(item.category, globalSearchQuery)}
+                    </span>
+                    <span class="font-mono text-xs px-2.5 py-1 rounded bg-bgCard border border-borderDark text-gray-300">
+                        ${highlightText(item.badge, globalSearchQuery)}
+                    </span>
+                </div>
+                <div class="flex items-center space-x-2 no-print">
+                    <button onclick="copyCardLink('${item.id}')" class="px-2.5 py-1 rounded-lg bg-bgCard border border-borderDark hover:border-cyanClin/40 text-xs font-mono text-gray-400 hover:text-white transition" title="Copia link diretto a questa scheda">
+                        <span id="copy-label-${item.id}">🔗 Link</span>
+                    </button>
+                    <button onclick="toggleFavorite('${item.id}')" class="px-2.5 py-1 rounded-lg border text-xs font-mono transition ${isFav ? 'bg-amberClin/15 border-amberClin/50 text-amberClin font-bold' : 'bg-bgCard border-borderDark text-gray-400 hover:text-amberClin'}" title="Salva nel Piano di Studio">
+                        ${isFav ? '★ Salvato' : '☆ Salva'}
+                    </button>
+                </div>
+            </div>
+
+            <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">${highlightText(item.title, globalSearchQuery)}</h2>
+            <p class="text-xs font-mono text-gray-400 mt-1 mb-4">${highlightText(item.subtitle, globalSearchQuery)}</p>
+
+            <!-- Sintesi Clinica -->
+            <div class="p-4 rounded-xl bg-bgCard border border-borderDark/80 text-gray-200 text-sm leading-relaxed mb-5">
+                ${highlightText(item.summary, globalSearchQuery)}
+            </div>
+
+            <!-- Approfondimento Anatomico Punti Chiave -->
+            <div class="space-y-3 mb-6">
+                <h3 class="font-mono text-xs uppercase tracking-wider text-gray-400">Analisi Anatomica & Meccanismi Biologici:</h3>
+                <ul class="space-y-3">
+                    ${item.details.map(point => {
+                        const splitPoint = point.split(':');
+                        const head = splitPoint[0];
+                        const rest = splitPoint.slice(1).join(':');
+                        return `
+                            <li class="flex items-start gap-3 text-sm text-gray-300 leading-relaxed">
+                                <span class="w-1.5 h-1.5 rounded-full bg-cyanClin mt-2 shrink-0"></span>
+                                <div>
+                                    ${rest ? `<strong class="text-white font-semibold">${highlightText(head, globalSearchQuery)}:</strong>${highlightText(rest, globalSearchQuery)}` : highlightText(point, globalSearchQuery)}
+                                </div>
+                            </li>
+                        `;
+                    }).join('')}
+                </ul>
+            </div>
+
+            <!-- Box Soluzioni / Protocollo -->
+            <div class="p-4 rounded-xl bg-emeraldClin/5 border border-emeraldClin/25 text-xs sm:text-sm text-emerald-200 leading-relaxed">
+                <span class="font-mono text-xs uppercase font-bold text-emeraldClin block mb-1">Strategie di Ottimizzazione & Opzioni Cliniche:</span>
+                ${highlightText(item.solutions, globalSearchQuery)}
+            </div>
+        </article>
+    `;
 }
 
 // --- A. RENDERING ENCICLOPEDIA ANATOMICA ---
 function renderEncyclopedia() {
     const grid = document.getElementById('encyclopedia-grid');
     const titleEl = document.getElementById('current-category-title');
-    const searchCountEl = document.getElementById('search-count');
     if (!grid) return;
 
+    const master = getMasterEncyclopedia();
     if (titleEl) {
         titleEl.innerText = currentCategoryFilter === 'all' ? 'Tutti i Moduli Anatomici e Clinici' : currentCategoryFilter;
     }
 
-    const filtered = MASTER_ENCYCLOPEDIA.filter(item => {
+    const filtered = master.filter(item => {
         const matchesCat = currentCategoryFilter === 'all' || item.category === currentCategoryFilter;
-        const fullText = `${item.title} ${item.subtitle} ${item.category} ${item.summary} ${item.details.join(' ')} ${item.solutions}`.toLowerCase();
-        const matchesSearch = !globalSearchQuery || fullText.includes(globalSearchQuery);
-        return matchesCat && matchesSearch;
-    });
+        const fullText = `${item.title} ${item.subtitle} ${item.category} ${item.summary} ${item.details.join(' ')} ${item.solutions}`;
+        const matchesSearch = matchesQuery(fullText, globalSearchQuery);
 
-    if (searchCountEl && currentMainView === 'enciclopedia') {
-        searchCountEl.innerText = globalSearchQuery ? `${filtered.length} trovati` : '';
-    }
+        // Filtro Softmax vs Hardmax
+        let matchesApproach = true;
+        if (currentApproachFilter === 'hardmax') {
+            matchesApproach = /chirurgi|osteotomi|le fort|bsso|impiant|rinoplastica|blefaroplastica|lip lift|trapianto|fue|filler|lipofilling/i.test(fullText);
+        } else if (currentApproachFilter === 'softmax') {
+            matchesApproach = /protocollo|routine|postura|esercizi|dieta|sonno|topico|siero|shampoo|grooming|stubble|idratazione/i.test(fullText);
+        }
+
+        return matchesCat && matchesSearch && matchesApproach;
+    });
 
     if (filtered.length === 0) {
         grid.innerHTML = `
             <div class="bg-bgPanel border border-borderDark rounded-xl p-8 text-center">
-                <p class="text-gray-400 text-sm">Nessuna voce trovata per "<span class="text-white font-mono">${globalSearchQuery}</span>" in questa categoria.</p>
-                <button onclick="resetFilters()" class="mt-4 px-4 py-2 rounded-lg bg-cyanClin/10 border border-cyanClin/30 text-cyanClin text-xs font-mono">Mostra tutte le voci</button>
+                <p class="text-gray-400 text-sm">Nessuna scheda trovata per "<span class="text-white font-mono">${globalSearchQuery}</span>" con i filtri attuali.</p>
+                <button onclick="resetFilters()" class="mt-4 px-4 py-2 rounded-lg bg-cyanClin/10 border border-cyanClin/30 text-cyanClin text-xs font-mono hover:bg-cyanClin hover:text-bgMain transition">Mostra tutte le schede</button>
             </div>
         `;
         return;
     }
 
-    grid.innerHTML = filtered.map(item => {
-        const badgeStyle = CATEGORY_COLORS[item.category] || "text-cyanClin bg-cyanClin/10 border-cyanClin/30";
-        return `
-            <article class="bg-bgPanel border border-borderDark rounded-2xl p-6 sm:p-7 hover:border-borderDark/90 transition shadow-lg">
-                <!-- Header Card -->
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <span class="font-mono text-[11px] px-2.5 py-1 rounded border ${badgeStyle}">
-                        ${item.category}
-                    </span>
-                    <span class="font-mono text-xs px-2.5 py-1 rounded bg-bgCard border border-borderDark text-gray-300">
-                        ${item.badge}
-                    </span>
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">${item.title}</h2>
-                <p class="text-xs font-mono text-gray-400 mt-1 mb-4">${item.subtitle}</p>
-
-                <!-- Sintesi Clinica -->
-                <div class="p-4 rounded-xl bg-bgCard border border-borderDark/80 text-gray-200 text-sm leading-relaxed mb-5">
-                    ${item.summary}
-                </div>
-
-                <!-- Approfondimento Anatomico Punti Chiave -->
-                <div class="space-y-3 mb-6">
-                    <h3 class="font-mono text-xs uppercase tracking-wider text-gray-400">Analisi Anatomica & Meccanismi Biologici:</h3>
-                    <ul class="space-y-3">
-                        ${item.details.map(point => {
-                            const splitPoint = point.split(':');
-                            const head = splitPoint[0];
-                            const rest = splitPoint.slice(1).join(':');
-                            return `
-                                <li class="flex items-start gap-3 text-sm text-gray-300 leading-relaxed">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-cyanClin mt-2 shrink-0"></span>
-                                    <div>
-                                        ${rest ? `<strong class="text-white font-semibold">${head}:</strong>${rest}` : point}
-                                    </div>
-                                </li>
-                            `;
-                        }).join('')}
-                    </ul>
-                </div>
-
-                <!-- Box Soluzioni / Protocollo -->
-                <div class="p-4 rounded-xl bg-emeraldClin/5 border border-emeraldClin/25 text-xs sm:text-sm text-emerald-200 leading-relaxed">
-                    <span class="font-mono text-xs uppercase font-bold text-emeraldClin block mb-1">Strategie di Ottimizzazione & Opzioni Cliniche:</span>
-                    ${item.solutions}
-                </div>
-            </article>
-        `;
-    }).join('');
+    grid.innerHTML = filtered.map(item => buildEncyclopediaCardHTML(item)).join('');
 }
 
 // --- B. RENDERING ATLANTE DEI 38 RAPPORTI E ANGOLI ---
@@ -245,21 +513,26 @@ function renderAtlas(levelFilter) {
 
     const filtered = ATLAS_38_RATIOS.filter(r => {
         const matchesLevel = currentAtlasFilter === 'all' || r.level === currentAtlasFilter;
-        const fullText = `${r.name} ${r.ideal} ${r.level} ${r.desc}`.toLowerCase();
-        const matchesSearch = !globalSearchQuery || fullText.includes(globalSearchQuery);
+        const fullText = `${r.name} ${r.ideal} ${r.level} ${r.desc}`;
+        const matchesSearch = matchesQuery(fullText, globalSearchQuery);
         return matchesLevel && matchesSearch;
     });
 
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-400 text-sm">Nessun parametro antropometrico trovato per "${globalSearchQuery}". <button onclick="resetFilters()" class="text-cyanClin underline ml-2 font-mono text-xs">Reset</button></td></tr>`;
+        return;
+    }
+
     tbody.innerHTML = filtered.map(r => `
         <tr class="hover:bg-bgHover transition">
-            <td class="py-3.5 px-4 font-semibold text-white whitespace-nowrap">${r.name}</td>
-            <td class="py-3.5 px-4 font-mono text-cyanClin whitespace-nowrap font-medium">${r.ideal}</td>
+            <td class="py-3.5 px-4 font-semibold text-white whitespace-nowrap">${highlightText(r.name, globalSearchQuery)}</td>
+            <td class="py-3.5 px-4 font-mono text-cyanClin whitespace-nowrap font-medium">${highlightText(r.ideal, globalSearchQuery)}</td>
             <td class="py-3.5 px-4 whitespace-nowrap">
                 <span class="px-2.5 py-0.5 rounded border font-mono text-[11px] ${levelBadges[r.level] || ''}">
                     ${r.level}
                 </span>
             </td>
-            <td class="py-3.5 px-4 text-gray-300 text-xs sm:text-sm leading-relaxed">${r.desc}</td>
+            <td class="py-3.5 px-4 text-gray-300 text-xs sm:text-sm leading-relaxed">${highlightText(r.desc, globalSearchQuery)}</td>
         </tr>
     `).join('');
 }
@@ -270,26 +543,37 @@ function renderFAQView() {
     if (!container || typeof FAQ_DATABASE_COMPLETE === 'undefined') return;
 
     const filtered = FAQ_DATABASE_COMPLETE.filter(f => {
-        const fullText = `${f.q} ${f.tag} ${f.a}`.toLowerCase();
-        return !globalSearchQuery || fullText.includes(globalSearchQuery);
+        const fullText = `${f.q} ${f.tag} ${f.a}`;
+        return matchesQuery(fullText, globalSearchQuery);
     });
 
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="bg-bgPanel border border-borderDark rounded-xl p-8 text-center text-gray-400 text-sm">Nessuna FAQ trovata per "${globalSearchQuery}".</div>`;
+        return;
+    }
+
     container.innerHTML = filtered.map((item, idx) => `
-        <details class="group bg-bgPanel border border-borderDark rounded-xl overflow-hidden transition" ${idx < 2 || globalSearchQuery ? 'open' : ''}>
+        <details class="faq-item group bg-bgPanel border border-borderDark rounded-xl overflow-hidden transition" ${idx < 3 || globalSearchQuery ? 'open' : ''}>
             <summary class="flex justify-between items-center p-5 cursor-pointer list-none hover:bg-bgCard transition">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pr-4">
                     <span class="font-mono text-[11px] px-2.5 py-0.5 rounded bg-amberClin/10 border border-amberClin/30 text-amberClin w-fit shrink-0">
-                        ${item.tag}
+                        ${highlightText(item.tag, globalSearchQuery)}
                     </span>
-                    <span class="font-bold text-white text-base">${item.q}</span>
+                    <span class="font-bold text-white text-base">${highlightText(item.q, globalSearchQuery)}</span>
                 </div>
                 <span class="text-gray-400 group-open:rotate-180 transition-transform duration-200 font-mono text-lg shrink-0">↓</span>
             </summary>
             <div class="px-5 pb-5 pt-3 text-sm text-gray-300 leading-relaxed border-t border-borderDark bg-bgCard/40">
-                ${item.a}
+                ${highlightText(item.a, globalSearchQuery)}
             </div>
         </details>
     `).join('');
+}
+
+function toggleAllFAQs(shouldOpen) {
+    document.querySelectorAll('.faq-item').forEach(el => {
+        el.open = shouldOpen;
+    });
 }
 
 // --- D. RENDERING GUIDE E PROTOCOLLI PRATICI ---
@@ -299,44 +583,52 @@ function renderProtocolsView() {
 
     const filtered = PROTOCOLS_COMPLETE.filter(p => {
         const secText = p.sections.map(s => `${s.subtitle} ${s.items.join(' ')}`).join(' ');
-        const fullText = `${p.title} ${p.badge} ${p.desc} ${secText}`.toLowerCase();
-        return !globalSearchQuery || fullText.includes(globalSearchQuery);
+        const fullText = `${p.title} ${p.badge} ${p.desc} ${secText}`;
+        return matchesQuery(fullText, globalSearchQuery);
     });
 
-    container.innerHTML = filtered.map(prot => `
-        <div class="bg-bgPanel border border-borderDark rounded-2xl p-6 sm:p-8">
-            <span class="font-mono text-xs px-2.5 py-1 rounded bg-cyanClin/10 border border-cyanClin/30 text-cyanClin">
-                ${prot.badge}
-            </span>
-            <h3 class="text-xl sm:text-2xl font-bold text-white mt-3 mb-2">${prot.title}</h3>
-            <p class="text-gray-400 text-sm mb-6">${prot.desc}</p>
+    container.innerHTML = filtered.map(prot => {
+        const isFav = savedFavorites.includes(prot.id);
+        return `
+            <div id="${prot.id}" class="bg-bgPanel border border-borderDark rounded-2xl p-6 sm:p-8">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="font-mono text-xs px-2.5 py-1 rounded bg-cyanClin/10 border border-cyanClin/30 text-cyanClin">
+                        ${highlightText(prot.badge, globalSearchQuery)}
+                    </span>
+                    <button onclick="toggleFavorite('${prot.id}')" class="px-3 py-1 rounded-lg border text-xs font-mono transition ${isFav ? 'bg-amberClin/15 border-amberClin/50 text-amberClin font-bold' : 'bg-bgCard border-borderDark text-gray-400 hover:text-amberClin'}">
+                        ${isFav ? '★ Protocollo Salvato' : '☆ Salva Protocollo'}
+                    </button>
+                </div>
+                <h3 class="text-xl sm:text-2xl font-bold text-white mt-3 mb-2">${highlightText(prot.title, globalSearchQuery)}</h3>
+                <p class="text-gray-400 text-sm mb-6">${highlightText(prot.desc, globalSearchQuery)}</p>
 
-            <div class="space-y-6">
-                ${prot.sections.map(sec => `
-                    <div class="bg-bgCard border border-borderDark rounded-xl p-5">
-                        <h4 class="font-mono text-xs uppercase tracking-wider text-emeraldClin font-bold mb-4 border-b border-borderDark pb-2">
-                            ${sec.subtitle}
-                        </h4>
-                        <ul class="space-y-3">
-                            ${sec.items.map(it => {
-                                const parts = it.split('—');
-                                const head = parts[0];
-                                const body = parts.slice(1).join('—');
-                                return `
-                                    <li class="text-sm text-gray-300 leading-relaxed flex items-start gap-2.5">
-                                        <span class="text-cyanClin font-mono text-xs mt-0.5">▸</span>
-                                        <div>
-                                            ${body ? `<strong class="text-white font-semibold">${head} —</strong>${body}` : it}
-                                        </div>
-                                    </li>
-                                `;
-                            }).join('')}
-                        </ul>
-                    </div>
-                `).join('')}
+                <div class="space-y-6">
+                    ${prot.sections.map(sec => `
+                        <div class="bg-bgCard border border-borderDark rounded-xl p-5">
+                            <h4 class="font-mono text-xs uppercase tracking-wider text-emeraldClin font-bold mb-4 border-b border-borderDark pb-2">
+                                ${highlightText(sec.subtitle, globalSearchQuery)}
+                            </h4>
+                            <ul class="space-y-3">
+                                ${sec.items.map(it => {
+                                    const parts = it.split('—');
+                                    const head = parts[0];
+                                    const body = parts.slice(1).join('—');
+                                    return `
+                                        <li class="text-sm text-gray-300 leading-relaxed flex items-start gap-2.5">
+                                            <span class="text-cyanClin font-mono text-xs mt-0.5">▸</span>
+                                            <div>
+                                                ${body ? `<strong class="text-white font-semibold">${highlightText(head, globalSearchQuery)} —</strong>${highlightText(body, globalSearchQuery)}` : highlightText(it, globalSearchQuery)}
+                                            </div>
+                                        </li>
+                                    `;
+                                }).join('')}
+                            </ul>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // --- E. RENDERING DEBUNKING & ALERT MEDICI ---
@@ -345,38 +637,102 @@ function renderDebunkingView() {
     if (!container || typeof DEBUNKING_COMPLETE === 'undefined') return;
 
     const filtered = DEBUNKING_COMPLETE.filter(d => {
-        const fullText = `${d.title} ${d.riskLevel} ${d.myth} ${d.reality}`.toLowerCase();
-        return !globalSearchQuery || fullText.includes(globalSearchQuery);
+        const fullText = `${d.title} ${d.riskLevel} ${d.myth} ${d.reality}`;
+        return matchesQuery(fullText, globalSearchQuery);
     });
 
     container.innerHTML = filtered.map(item => `
         <div class="bg-bgPanel border border-roseClin/30 rounded-2xl p-6 sm:p-7">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <h3 class="text-lg sm:text-xl font-bold text-white">${item.title}</h3>
+                <h3 class="text-lg sm:text-xl font-bold text-white">${highlightText(item.title, globalSearchQuery)}</h3>
                 <span class="font-mono text-[11px] px-2.5 py-1 rounded bg-roseClin/15 border border-roseClin/40 text-roseClin font-semibold">
-                    ${item.riskLevel}
+                    ${highlightText(item.riskLevel, globalSearchQuery)}
                 </span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="p-4 rounded-xl bg-bgCard border border-borderDark">
                     <span class="font-mono text-[11px] uppercase text-amberClin block mb-1 font-semibold">Il Falso Mito da Forum:</span>
-                    <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">${item.myth}</p>
+                    <p class="text-xs sm:text-sm text-gray-400 leading-relaxed">${highlightText(item.myth, globalSearchQuery)}</p>
                 </div>
                 <div class="p-4 rounded-xl bg-roseClin/5 border border-roseClin/20">
                     <span class="font-mono text-[11px] uppercase text-roseClin block mb-1 font-semibold">Realtà Clinica & Rischi Anatomici:</span>
-                    <p class="text-xs sm:text-sm text-gray-200 leading-relaxed">${item.reality}</p>
+                    <p class="text-xs sm:text-sm text-gray-200 leading-relaxed">${highlightText(item.reality, globalSearchQuery)}</p>
                 </div>
             </div>
         </div>
     `).join('');
 }
 
+// --- F. RENDERING "IL MIO PIANO DI STUDIO" (PREFERITI SALVATI) ---
+function renderFavoritesView() {
+    const container = document.getElementById('favorites-grid');
+    if (!container) return;
+
+    const master = getMasterEncyclopedia();
+    const favEncyclopedia = master.filter(item => savedFavorites.includes(item.id));
+    const favProtocols = (typeof PROTOCOLS_COMPLETE !== 'undefined' ? PROTOCOLS_COMPLETE : []).filter(p => savedFavorites.includes(p.id));
+
+    if (favEncyclopedia.length === 0 && favProtocols.length === 0) {
+        container.innerHTML = `
+            <div class="bg-bgPanel border border-borderDark rounded-2xl p-10 text-center">
+                <span class="text-3xl text-amberClin block mb-3">☆</span>
+                <h3 class="text-lg font-bold text-white mb-2">Il tuo Piano di Studio è vuoto</h3>
+                <p class="text-gray-400 text-sm max-w-md mx-auto mb-6">
+                    Clicca sul pulsante <span class="font-mono text-xs px-2 py-0.5 rounded bg-bgCard border border-borderDark text-amberClin">☆ Salva</span> in alto a destra su qualsiasi scheda anatomica o protocollo per raccogliere qui i tuoi argomenti prioritari.
+                </p>
+                <button onclick="switchMainView('enciclopedia')" class="px-5 py-2.5 rounded-xl bg-cyanClin text-bgMain font-semibold text-sm hover:bg-sky-300 transition">
+                    Esplora l'Enciclopedia
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    if (favEncyclopedia.length > 0) {
+        html += favEncyclopedia.map(item => buildEncyclopediaCardHTML(item)).join('');
+    }
+    if (favProtocols.length > 0) {
+        html += favProtocols.map(prot => `
+            <div class="bg-bgPanel border border-amberClin/40 rounded-2xl p-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-mono text-xs text-amberClin">${prot.badge}</span>
+                    <button onclick="toggleFavorite('${prot.id}')" class="text-xs font-mono text-roseClin hover:underline">Rimuovi dai salvati</button>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">${prot.title}</h3>
+                <p class="text-gray-400 text-sm mb-4">${prot.desc}</p>
+                <button onclick="switchMainView('protocolli')" class="px-4 py-2 rounded-lg bg-cyanClin/10 border border-cyanClin/30 text-cyanClin text-xs font-mono">Vai al Protocollo Completo →</button>
+            </div>
+        `).join('');
+    }
+    container.innerHTML = html;
+}
+
+// ============================================================================
+// 7. UTILITY: COPIA LINK DIRETTO & RESET FILTRI
+// ============================================================================
+function copyCardLink(itemId) {
+    const url = `${window.location.origin}${window.location.pathname}#${itemId}`;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url);
+    }
+    const label = document.getElementById(`copy-label-${itemId}`);
+    if (label) {
+        label.innerText = "✓ Copiato!";
+        setTimeout(() => { label.innerText = "🔗 Link"; }, 2000);
+    }
+}
+
 function resetFilters() {
     currentCategoryFilter = 'all';
+    currentApproachFilter = 'all';
+    currentAtlasFilter = 'all';
     globalSearchQuery = '';
     const searchInput = document.getElementById('global-search');
     if (searchInput) searchInput.value = '';
+    updateClearButtonVisibility();
+    setApproachFilter('all');
     renderCategorySidebar();
     renderAllViews();
 }
