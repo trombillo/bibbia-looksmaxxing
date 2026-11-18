@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="it" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MORPHO CODEX | Enciclopedia Integrale di Morfologia Cranio-Facciale ed Estetica Clinica</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        bgMain: '#07080B',
+                        bgPanel: '#0E1017',
+                        bgCard: '#131620',
+                        bgHover: '#191D2B',
+                        borderDark: '#1F2433',
+                        cyanClin: '#38BDF8',
+                        emeraldClin: '#10B981',
+                        amberClin: '#F59E0B',
+                        roseClin: '#F43F5E',
+                        purpleClin: '#A855F7'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #07080B; color: #F1F5F9; }
+        .glass-bar { background: rgba(14, 16, 23, 0.88); backdrop-filter: blur(16px); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #07080B; }
+        ::-webkit-scrollbar-thumb { background: #1F2433; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #38BDF8; }
+    </style>
+</head>
+<body class="antialiased selection:bg-cyanClin selection:text-bgMain flex flex-col min-h-screen">
+
+    <!-- TOP HEADER FISSO -->
+    <header class="fixed top-0 w-full z-50 glass-bar border-b border-borderDark h-16 flex items-center justify-between px-4 lg:px-8">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-lg bg-cyanClin/10 border border-cyanClin/40 flex items-center justify-center font-mono font-bold text-cyanClin text-lg">
+                M
+            </div>
+            <div>
+                <span class="font-bold tracking-tight text-white text-base">MORPHO<span class="text-cyanClin">CODEX</span></span>
+                <span class="hidden sm:inline-block font-mono text-[10px] text-gray-400 ml-2 px-2 py-0.5 rounded bg-bgCard border border-borderDark uppercase">Enciclopedia Integrale v2.0</span>
+            </div>
+        </div>
+
+        <!-- Barra di Ricerca Globale -->
+        <div class="flex-1 max-w-xl mx-4">
+            <div class="relative">
+                <input type="text" id="global-search" placeholder="Cerca nell'enciclopedia (es. Le Fort, Canthal Tilt, Tretinoina, Osso Ioide, IGF-1...)" 
+                    class="w-full bg-bgCard border border-borderDark rounded-lg pl-4 pr-10 py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-cyanClin focus:outline-none font-sans">
+                <span id="search-count" class="absolute right-3 top-2.5 font-mono text-[11px] text-cyanClin"></span>
+            </div>
+        </div>
+
+        <div class="hidden xl:flex items-center space-x-4 font-mono text-xs text-gray-400">
+            <span class="px-2.5 py-1 rounded bg-emeraldClin/10 border border-emeraldClin/20 text-emeraldClin">100% Teoria & Scienza</span>
+            <span>Zero Tool Fotografici</span>
+        </div>
+    </header>
+
+    <!-- LAYOUT PRINCIPALE CON SIDEBAR E CONTENUTO -->
+    <div class="pt-16 flex-1 flex">
+        
+        <!-- SIDEBAR SINISTRA FISSA (Desktop) -->
+        <aside class="hidden lg:block w-72 fixed top-16 bottom-0 left-0 bg-bgPanel border-r border-borderDark overflow-y-auto p-5">
+            <div class="mb-6">
+                <p class="font-mono text-[11px] uppercase tracking-widest text-gray-500 mb-3">Viste Principali</p>
+                <nav class="space-y-1.5" id="main-nav">
+                    <button onclick="switchMainView('enciclopedia')" id="nav-enciclopedia" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium bg-cyanClin/10 text-cyanClin border border-cyanClin/30 flex items-center justify-between transition">
+                        <span>1. Enciclopedia Anatomica</span>
+                        <span class="font-mono text-xs" id="count-enc"></span>
+                    </button>
+                    <button onclick="switchMainView('atlante')" id="nav-atlante" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition">
+                        <span>2. Atlante 38 Rapporti & Angoli</span>
+                        <span class="font-mono text-xs">38</span>
+                    </button>
+                    <button onclick="switchMainView('faq')" id="nav-faq" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition">
+                        <span>3. Pronto Soccorso (FAQ)</span>
+                        <span class="font-mono text-xs" id="count-faq"></span>
+                    </button>
+                    <button onclick="switchMainView('protocolli')" id="nav-protocolli" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition">
+                        <span>4. Guide & Protocolli Pratici</span>
+                        <span class="font-mono text-xs" id="count-prot"></span>
+                    </button>
+                    <button onclick="switchMainView('debunking')" id="nav-debunking" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-roseClin/80 hover:bg-roseClin/10 hover:text-roseClin flex items-center justify-between transition">
+                        <span>5. Alert & Debunking Medico</span>
+                        <span class="font-mono text-xs" id="count-deb"></span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Filtro Distretti Anatomici -->
+            <div class="border-t border-borderDark pt-5">
+                <p class="font-mono text-[11px] uppercase tracking-widest text-gray-500 mb-3">Filtra Modulo Enciclopedico</p>
+                <div class="space-y-1" id="category-sidebar">
+                    <!-- Popolato dinamicamente da app.js -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- CONTENUTO CENTRALE -->
+        <main class="flex-1 lg:ml-72 p-4 sm:p-8 max-w-6xl mx-auto w-full">
+            
+            <!-- Navigazione Mobile -->
+            <div class="flex lg:hidden overflow-x-auto gap-2 pb-4 mb-6 border-b border-borderDark">
+                <button onclick="switchMainView('enciclopedia')" class="px-3 py-1.5 rounded bg-bgCard border border-borderDark text-xs font-mono whitespace-nowrap">1. Enciclopedia</button>
+                <button onclick="switchMainView('atlante')" class="px-3 py-1.5 rounded bg-bgCard border border-borderDark text-xs font-mono whitespace-nowrap">2. Atlante 38 Rapporti</button>
+                <button onclick="switchMainView('faq')" class="px-3 py-1.5 rounded bg-bgCard border border-borderDark text-xs font-mono whitespace-nowrap">3. FAQ Rapide</button>
+                <button onclick="switchMainView('protocolli')" class="px-3 py-1.5 rounded bg-bgCard border border-borderDark text-xs font-mono whitespace-nowrap">4. Guide Pratiche</button>
+                <button onclick="switchMainView('debunking')" class="px-3 py-1.5 rounded bg-roseClin/10 border border-roseClin/30 text-roseClin text-xs font-mono whitespace-nowrap">5. Debunking</button>
+            </div>
+
+            <!-- VISTA 1: ENCICLOPEDIA ANATOMICA INTEGRALE -->
+            <section id="view-enciclopedia" class="space-y-6">
+                <div class="border-b border-borderDark pb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <span class="font-mono text-xs text-cyanClin uppercase tracking-widest">Compendio Teorico Integrale</span>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white mt-1" id="current-category-title">Tutti i Moduli Anatomici</h1>
+                        <p class="text-gray-400 text-sm mt-1">Spiegazioni mediche, meccanismi biologici, opzioni correttive (non-chirurgiche e chirurgiche) per ogni tratto.</p>
+                    </div>
+                </div>
+                <div id="encyclopedia-grid" class="space-y-6">
+                    <!-- Popolato da app.js -->
+                </div>
+            </section>
+
+            <!-- VISTA 2: ATLANTE DEI 38 RAPPORTI E ANGOLI CEFALOMETRICI -->
+            <section id="view-atlante" class="hidden space-y-6">
+                <div class="border-b border-borderDark pb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <span class="font-mono text-xs text-emeraldClin uppercase tracking-widest">Antropometria & Cefalometria</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Atlante Completo dei 38 Rapporti e Angoli Facciali</h2>
+                        <p class="text-gray-400 text-sm mt-1">Tutti i parametri matematici, angoli sul piano di Francoforte e indici di proporzione classificati per importanza estetica.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="renderAtlas('all')" class="px-3 py-1 rounded bg-bgCard border border-borderDark text-xs font-mono">Tutti (38)</button>
+                        <button onclick="renderAtlas('Estremamente Importante')" class="px-3 py-1 rounded bg-roseClin/10 border border-roseClin/30 text-roseClin text-xs font-mono">Critici</button>
+                        <button onclick="renderAtlas('Molto Importante')" class="px-3 py-1 rounded bg-cyanClin/10 border border-cyanClin/30 text-cyanClin text-xs font-mono">Molto Importanti</button>
+                        <button onclick="renderAtlas('Importante')" class="px-3 py-1 rounded bg-emeraldClin/10 border border-emeraldClin/30 text-emeraldClin text-xs font-mono">Importanti</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto rounded-xl border border-borderDark bg-bgPanel">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-borderDark bg-bgCard font-mono text-[11px] text-gray-400 uppercase">
+                                <th class="py-3.5 px-4">Parametro / Angolo</th>
+                                <th class="py-3.5 px-4">Range Ideale</th>
+                                <th class="py-3.5 px-4">Gerarchia</th>
+                                <th class="py-3.5 px-4">Metodo di Misurazione Teorico & Impatto Morfologico</th>
+                            </tr>
+                        </thead>
+                        <tbody id="atlas-tbody" class="divide-y divide-borderDark text-sm"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VISTA 3: PRONTO SOCCORSO ESTETICO (FAQ) -->
+            <section id="view-faq" class="hidden space-y-6">
+                <div class="border-b border-borderDark pb-5">
+                    <span class="font-mono text-xs text-amberClin uppercase tracking-widest">Risposte Pronte</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Pronto Soccorso Estetico & Diagnosi Differenziale</h2>
+                    <p class="text-gray-400 text-sm mt-1">Come distinguere condizioni anatomiche simili e quali strategie adottare in ogni scenario.</p>
+                </div>
+                <div id="faq-list" class="space-y-4"></div>
+            </section>
+
+            <!-- VISTA 4: GUIDE PRATICHE E PROTOCOLLI OPERATIVI -->
+            <section id="view-protocolli" class="hidden space-y-6">
+                <div class="border-b border-borderDark pb-5">
+                    <span class="font-mono text-xs text-cyanClin uppercase tracking-widest">Manuali Step-by-Step</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Guide Pratiche di Miglioramento Personale</h2>
+                    <p class="text-gray-400 text-sm mt-1">Protocolli giornalieri e settimanali strutturati: Skincare, Debloating in 41 punti, Haircare, Postura, Sonno e Stile.</p>
+                </div>
+                <div id="protocols-list" class="space-y-8"></div>
+            </section>
+
+            <!-- VISTA 5: DEBUNKING & SICUREZZA MEDICA -->
+            <section id="view-debunking" class="hidden space-y-6">
+                <div class="border-b border-borderDark pb-5">
+                    <span class="font-mono text-xs text-roseClin uppercase tracking-widest">Prevenzione Danni & Valutazione Clinica</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Debunking della "Bro-Science" e Pratiche ad Alto Rischio</h2>
+                    <p class="text-gray-400 text-sm mt-1">Analisi medica oggettiva del perché molte pratiche estreme diffuse sui forum causano danni irreversibili o inestetismi peggiori.</p>
+                </div>
+                <div id="debunking-list" class="grid grid-cols-1 gap-6"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Importazione Modulare dei Database e Logica -->
+    <script src="data-part1.js"></script>
+    <script src="data-part2.js"></script>
+    <script src="data-part3.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
