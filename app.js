@@ -1,12 +1,14 @@
 // ============================================================================
-// APP.JS v4.0 — MOTORE HUB, OMNI-SEARCH, EVIDENZIAZIONE, PREFERITI & SVG
+// APP.JS v5.0 — MOTORE HUB, OMNI-SEARCH, EVIDENZIAZIONE, PREFERITI & SVG
 // ============================================================================
 
 function getMasterEncyclopedia() {
     return [
         ...(typeof ENCYCLOPEDIA_PART_1 !== 'undefined' ? ENCYCLOPEDIA_PART_1 : []),
         ...(typeof ENCYCLOPEDIA_PART_2 !== 'undefined' ? ENCYCLOPEDIA_PART_2 : []),
-        ...(typeof ENCYCLOPEDIA_PART_3 !== 'undefined' ? ENCYCLOPEDIA_PART_3 : [])
+        ...(typeof ENCYCLOPEDIA_PART_3 !== 'undefined' ? ENCYCLOPEDIA_PART_3 : []),
+        ...(typeof ENCYCLOPEDIA_PART_4 !== 'undefined' ? ENCYCLOPEDIA_PART_4 : []),
+        ...(typeof ENCYCLOPEDIA_PART_5 !== 'undefined' ? ENCYCLOPEDIA_PART_5 : [])
     ];
 }
 
