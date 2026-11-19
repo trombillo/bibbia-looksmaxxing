@@ -1,5 +1,5 @@
 // ============================================================================
-// APP.JS v5.0 — MOTORE HUB, OMNI-SEARCH, EVIDENZIAZIONE, PREFERITI & SVG
+// APP.JS v5.0 — MOTORE OMNI-SEARCH, EVIDENZIAZIONE, PREFERITI & SVG
 // ============================================================================
 
 function getMasterEncyclopedia() {
@@ -23,7 +23,7 @@ const SEMANTIC_SYNONYMS = {
     "calvizie": ["alopecia", "dht", "finasteride", "minoxidil", "norwood", "fue"]
 };
 
-let currentMainView = 'panoramica';
+let currentMainView = 'enciclopedia';
 let currentCategoryFilter = 'all';
 let currentApproachFilter = 'all';
 let currentAtlasFilter = 'all';
@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFavoritesFromStorage();
     initCounters();
     renderCategorySidebar();
-    renderHubDashboard();
     renderAllViews();
     setupKeyboardShortcuts();
     checkUrlHashOnLoad();
@@ -57,11 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', (e) => {
             globalSearchQuery = e.target.value.trim();
             updateClearButtonVisibility();
-            if (globalSearchQuery && currentMainView === 'panoramica') {
-                switchMainView('enciclopedia');
-            } else {
-                renderAllViews();
-            }
+            renderAllViews();
         });
     }
 });
@@ -91,7 +86,7 @@ function setupKeyboardShortcuts() {
 function checkUrlHashOnLoad() {
     const hash = window.location.hash.replace('#', '');
     if (!hash) return;
-    if (['panoramica', 'enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'].includes(hash)) {
+    if (['enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'].includes(hash)) {
         switchMainView(hash);
     } else {
         const master = getMasterEncyclopedia();
@@ -132,11 +127,7 @@ function triggerQuickSearch(term) {
     globalSearchQuery = term;
     if (searchInput) searchInput.value = term;
     updateClearButtonVisibility();
-    if (term && currentMainView === 'panoramica') {
-        switchMainView('enciclopedia');
-    } else {
-        renderAllViews();
-    }
+    renderAllViews();
 }
 
 function updateClearButtonVisibility() {
@@ -185,67 +176,18 @@ function updateFavoriteCounters() {
 }
 
 // ============================================================================
-// CONTATORI, SIDEBAR E DASHBOARD PANORAMICA
+// CONTATORI E SIDEBAR
 // ============================================================================
 function initCounters() {
     const master = getMasterEncyclopedia();
     const encCount = document.getElementById('count-enc');
-    const atlCount = document.getElementById('count-atl');
-    const faqCount = document.getElementById('count-faq');
     const protCount = document.getElementById('count-prot');
     const debCount = document.getElementById('count-deb');
 
     if (encCount) encCount.innerText = master.length;
-    if (atlCount && typeof ATLAS_38_RATIOS !== 'undefined') atlCount.innerText = ATLAS_38_RATIOS.length;
-    if (faqCount && typeof FAQ_DATABASE_COMPLETE !== 'undefined') faqCount.innerText = FAQ_DATABASE_COMPLETE.length;
     if (protCount && typeof PROTOCOLS_COMPLETE !== 'undefined') protCount.innerText = PROTOCOLS_COMPLETE.length;
     if (debCount && typeof DEBUNKING_COMPLETE !== 'undefined') debCount.innerText = DEBUNKING_COMPLETE.length;
     updateFavoriteCounters();
-}
-
-function renderHubDashboard() {
-    const statsGrid = document.getElementById('hub-stats-grid');
-    const catsGrid = document.getElementById('hub-categories-grid');
-    const master = getMasterEncyclopedia();
-
-    if (statsGrid) {
-        const stats = [
-            { label: "Monografie Cliniche", val: master.length, color: "text-cyanClin", view: "enciclopedia" },
-            { label: "Angoli & Rapporti", val: (typeof ATLAS_38_RATIOS !== 'undefined' ? ATLAS_38_RATIOS.length : 38), color: "text-emeraldClin", view: "atlante" },
-            { label: "Risposte Rapide FAQ", val: (typeof FAQ_DATABASE_COMPLETE !== 'undefined' ? FAQ_DATABASE_COMPLETE.length : 15), color: "text-amberClin", view: "faq" },
-            { label: "Alert & Debunking", val: (typeof DEBUNKING_COMPLETE !== 'undefined' ? DEBUNKING_COMPLETE.length : 6), color: "text-roseClin", view: "debunking" }
-        ];
-        statsGrid.innerHTML = stats.map(s => `
-            <div onclick="switchMainView('${s.view}')" class="cursor-pointer bg-bgPanel border border-borderDark hover:border-cyanClin/40 rounded-xl p-5 transition">
-                <span class="font-mono text-3xl font-extrabold ${s.color}">${s.val}</span>
-                <p class="text-xs font-mono uppercase text-gray-400 mt-1">${s.label} →</p>
-            </div>
-        `).join('');
-    }
-
-    if (catsGrid) {
-        const categories = {};
-        master.forEach(item => {
-            if (!categories[item.category]) {
-                categories[item.category] = { count: 0, sample: item.title };
-            }
-            categories[item.category].count++;
-        });
-
-        catsGrid.innerHTML = Object.keys(categories).map(cat => {
-            const badgeStyle = CATEGORY_COLORS[cat] || "text-cyanClin bg-cyanClin/10 border-cyanClin/30";
-            return `
-                <div onclick="selectCategory('${cat.replace(/'/g, "\\'")}')" class="cursor-pointer bg-bgPanel border border-borderDark hover:border-cyanClin/50 rounded-xl p-5 flex items-center justify-between transition group">
-                    <div>
-                        <span class="font-mono text-[11px] px-2 py-0.5 rounded border ${badgeStyle}">${categories[cat].count} Monografie</span>
-                        <h3 class="text-base font-bold text-white mt-2 group-hover:text-cyanClin transition">${cat}</h3>
-                        <p class="text-xs text-gray-500 mt-1 truncate max-w-md">Es: ${categories[cat].sample}</p>
-                    </div>
-                    <span class="font-mono text-gray-500 group-hover:text-cyanClin text-lg transition">→</span>
-                </div>
-            `;
-        }).join('');
-    }
 }
 
 function toggleMobileSidebar() {
@@ -259,7 +201,7 @@ function toggleMobileSidebar() {
 
 function switchMainView(viewName) {
     currentMainView = viewName;
-    const views = ['panoramica', 'enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'];
+    const views = ['enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'];
 
     views.forEach(v => {
         const section = document.getElementById(`view-${v}`);
@@ -385,19 +327,16 @@ function renderCrossSearchBanner() {
 
     pillsEl.innerHTML = `
         <button onclick="switchMainView('enciclopedia')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'enciclopedia' ? 'bg-cyanClin text-bgMain border-cyanClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-cyanClin'}">
-            Enciclopedia (${encMatches})
+            Enciclopedia & FAQ (${encMatches})
         </button>
         <button onclick="switchMainView('atlante')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'atlante' ? 'bg-emeraldClin text-bgMain border-emeraldClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-emeraldClin'}">
-            Atlante 38 Rapporti (${atlMatches})
-        </button>
-        <button onclick="switchMainView('faq')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'faq' ? 'bg-amberClin text-bgMain border-amberClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-amberClin'}">
-            FAQ (${faqMatches})
+            Atlante Rapporti (${atlMatches})
         </button>
         <button onclick="switchMainView('protocolli')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'protocolli' ? 'bg-cyanClin text-bgMain border-cyanClin font-bold' : 'bg-bgCard border-borderDark text-gray-300 hover:border-cyanClin'}">
-            Guide Pratiche (${protMatches})
+            Protocolli Pratici (${protMatches})
         </button>
         <button onclick="switchMainView('debunking')" class="px-2.5 py-1 rounded-lg font-mono text-xs border transition ${currentMainView === 'debunking' ? 'bg-roseClin text-white border-roseClin font-bold' : 'bg-bgCard border-borderDark text-roseClin/80 hover:border-roseClin'}">
-            Debunking (${debMatches})
+            Debunking Medico (${debMatches})
         </button>
     `;
 }
@@ -475,7 +414,6 @@ function buildEncyclopediaCardHTML(item) {
 function renderEncyclopedia() {
     const grid = document.getElementById('encyclopedia-grid');
     const titleEl = document.getElementById('current-category-title');
-    const tocLinks = document.getElementById('encyclopedia-toc-links');
     if (!grid) return;
 
     const master = getMasterEncyclopedia();
@@ -498,14 +436,6 @@ function renderEncyclopedia() {
         return matchesCat && matchesSearch && matchesApproach;
     });
 
-    if (tocLinks) {
-        tocLinks.innerHTML = filtered.map(item => `
-            <a href="#${item.id}" class="px-2.5 py-1 rounded bg-bgCard border border-borderDark hover:border-cyanClin text-xs text-gray-300 hover:text-cyanClin transition truncate max-w-xs">
-                ${item.title.split(':')[0]}
-            </a>
-        `).join('');
-    }
-
     if (filtered.length === 0) {
         grid.innerHTML = `
             <div class="bg-bgPanel border border-borderDark rounded-xl p-8 text-center">
@@ -516,13 +446,46 @@ function renderEncyclopedia() {
         return;
     }
 
-    grid.innerHTML = filtered.map(item => buildEncyclopediaCardHTML(item)).join('');
+    // Uniamo l'enciclopedia con le FAQ pertinenti in fondo alla vista per massima ricchezza
+    const matchingFaqs = (typeof FAQ_DATABASE_COMPLETE !== 'undefined' ? FAQ_DATABASE_COMPLETE : []).filter(f => {
+        const matchesCat = currentCategoryFilter === 'all' || f.tag.toLowerCase().includes(currentCategoryFilter.toLowerCase().split(' ')[0]);
+        const matchesSearch = !globalSearchQuery || matchesQuery(`${f.q} ${f.tag} ${f.a}`, globalSearchQuery);
+        return matchesCat && matchesSearch;
+    });
+
+    let html = filtered.map(item => buildEncyclopediaCardHTML(item)).join('');
+
+    if (matchingFaqs.length > 0 && currentCategoryFilter !== 'all') {
+        html += `
+            <div class="mt-10 pt-6 border-t border-borderDark">
+                <h3 class="text-lg font-bold text-white mb-4 font-mono uppercase tracking-wider">Domande Frequenti (FAQ) collegate al Distretto</h3>
+                <div class="space-y-4">
+                    ${matchingFaqs.map((item, idx) => `
+                        <details class="faq-item group bg-bgPanel border border-borderDark rounded-xl overflow-hidden transition">
+                            <summary class="flex justify-between items-center p-4 cursor-pointer list-none hover:bg-bgCard transition">
+                                <div class="flex items-center gap-3 pr-4">
+                                    <span class="font-mono text-[11px] px-2.5 py-0.5 rounded bg-amberClin/10 border border-amberClin/30 text-amberClin shrink-0">${item.tag}</span>
+                                    <span class="font-bold text-white text-sm">${item.q}</span>
+                                </div>
+                                <span class="text-gray-400 group-open:rotate-180 transition-transform duration-200 font-mono text-sm shrink-0">↓</span>
+                            </summary>
+                            <div class="px-4 pb-4 pt-2 text-xs sm:text-sm text-gray-300 leading-relaxed border-t border-borderDark bg-bgCard/40">
+                                ${item.a}
+                            </div>
+                        </details>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    grid.innerHTML = html;
 }
 
 function renderAtlas(levelFilter) {
     currentAtlasFilter = levelFilter || 'all';
     const tbody = document.getElementById('atlas-tbody');
-    if (!tbody || typeof ATLAS_38_RATIOS === 'undefined') return;
+    if (!tbody || typeof ATLAS_38_RATIOS !== 'undefined') return;
 
     const levelBadges = {
         "Estremamente Importante": "bg-roseClin/10 text-roseClin border-roseClin/30",
@@ -538,7 +501,7 @@ function renderAtlas(levelFilter) {
     });
 
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-400 text-sm">Nessun parametro antropometrico trovato per "${globalSearchQuery}". <button onclick="resetFilters()" class="text-cyanClin underline ml-2 font-mono text-xs">Reset</button></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-400 text-sm">Nessun parametro antropometrico trovato per "${globalSearchQuery}".</td></tr>`;
         return;
     }
 
@@ -554,39 +517,6 @@ function renderAtlas(levelFilter) {
             <td class="py-3.5 px-4 text-gray-300 text-xs sm:text-sm leading-relaxed">${highlightText(r.desc, globalSearchQuery)}</td>
         </tr>
     `).join('');
-}
-
-function renderFAQView() {
-    const container = document.getElementById('faq-list');
-    if (!container || typeof FAQ_DATABASE_COMPLETE === 'undefined') return;
-
-    const filtered = FAQ_DATABASE_COMPLETE.filter(f => matchesQuery(`${f.q} ${f.tag} ${f.a}`, globalSearchQuery));
-
-    if (filtered.length === 0) {
-        container.innerHTML = `<div class="bg-bgPanel border border-borderDark rounded-xl p-8 text-center text-gray-400 text-sm">Nessuna FAQ trovata per "${globalSearchQuery}".</div>`;
-        return;
-    }
-
-    container.innerHTML = filtered.map((item, idx) => `
-        <details class="faq-item group bg-bgPanel border border-borderDark rounded-xl overflow-hidden transition" ${idx < 3 || globalSearchQuery ? 'open' : ''}>
-            <summary class="flex justify-between items-center p-5 cursor-pointer list-none hover:bg-bgCard transition">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pr-4">
-                    <span class="font-mono text-[11px] px-2.5 py-0.5 rounded bg-amberClin/10 border border-amberClin/30 text-amberClin w-fit shrink-0">
-                        ${highlightText(item.tag, globalSearchQuery)}
-                    </span>
-                    <span class="font-bold text-white text-base">${highlightText(item.q, globalSearchQuery)}</span>
-                </div>
-                <span class="text-gray-400 group-open:rotate-180 transition-transform duration-200 font-mono text-lg shrink-0">↓</span>
-            </summary>
-            <div class="px-5 pb-5 pt-3 text-sm text-gray-300 leading-relaxed border-t border-borderDark bg-bgCard/40">
-                ${highlightText(item.a, globalSearchQuery)}
-            </div>
-        </details>
-    `).join('');
-}
-
-function toggleAllFAQs(shouldOpen) {
-    document.querySelectorAll('.faq-item').forEach(el => { el.open = shouldOpen; });
 }
 
 function renderProtocolsView() {
@@ -607,7 +537,7 @@ function renderProtocolsView() {
                         ${highlightText(prot.badge, globalSearchQuery)}
                     </span>
                     <button onclick="toggleFavorite('${prot.id}')" class="px-3 py-1 rounded-lg border text-xs font-mono transition ${isFav ? 'bg-amberClin/15 border-amberClin/50 text-amberClin font-bold' : 'bg-bgCard border-borderDark text-gray-400 hover:text-amberClin'}">
-                        ${isFav ? '★ Protocollo Salvato' : '☆ Salva Protocollo'}
+                        ${isFav ? '★ Salvato' : '☆ Salva Protocollo'}
                     </button>
                 </div>
                 <h3 class="text-xl sm:text-2xl font-bold text-white mt-3 mb-2">${highlightText(prot.title, globalSearchQuery)}</h3>
@@ -685,7 +615,7 @@ function renderFavoritesView() {
                 <span class="text-3xl text-amberClin block mb-3">☆</span>
                 <h3 class="text-lg font-bold text-white mb-2">Il tuo Piano di Studio è vuoto</h3>
                 <p class="text-gray-400 text-sm max-w-md mx-auto mb-6">
-                    Clicca sul pulsante <span class="font-mono text-xs px-2 py-0.5 rounded bg-bgCard border border-borderDark text-amberClin">☆ Salva</span> in alto a destra su qualsiasi scheda anatomica o protocollo per raccogliere qui i tuoi argomenti prioritari.
+                    Clicca sul pulsante <span class="font-mono text-xs px-2.5 py-1 rounded bg-bgCard border border-borderDark text-amberClin">☆ Salva</span> in alto a destra su qualsiasi scheda anatomica o protocollo per raccogliere qui i tuoi argomenti prioritari.
                 </p>
                 <button onclick="switchMainView('enciclopedia')" class="px-5 py-2.5 rounded-xl bg-cyanClin text-bgMain font-semibold text-sm hover:bg-sky-300 transition">
                     Esplora l'Enciclopedia
