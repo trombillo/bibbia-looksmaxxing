@@ -1,8 +1,7 @@
 // ============================================================================
-// APP.JS v3.0 — MOTORE OMNI-SEARCH, EVIDENZIAZIONE, PREFERITI & SVG ROUTING
+// APP.JS v4.0 — MOTORE HUB, OMNI-SEARCH, EVIDENZIAZIONE, PREFERITI & SVG
 // ============================================================================
 
-// Unione dinamica dei 3 Database Enciclopedici
 function getMasterEncyclopedia() {
     return [
         ...(typeof ENCYCLOPEDIA_PART_1 !== 'undefined' ? ENCYCLOPEDIA_PART_1 : []),
@@ -11,7 +10,6 @@ function getMasterEncyclopedia() {
     ];
 }
 
-// Dizionario di espansione semantica (traduce lo slang nei termini clinici del database)
 const SEMANTIC_SYNONYMS = {
     "mewing": ["lingua", "palato", "miofunzionale", "deglutizione", "palatoglosso"],
     "hollow": ["ogee", "fossa canina", "buccinatori", "zigomi", "malare"],
@@ -23,15 +21,13 @@ const SEMANTIC_SYNONYMS = {
     "calvizie": ["alopecia", "dht", "finasteride", "minoxidil", "norwood", "fue"]
 };
 
-// Stato Globale dell'Applicazione
-let currentMainView = 'enciclopedia';
+let currentMainView = 'panoramica';
 let currentCategoryFilter = 'all';
-let currentApproachFilter = 'all'; // 'all' | 'softmax' | 'hardmax'
+let currentApproachFilter = 'all';
 let currentAtlasFilter = 'all';
 let globalSearchQuery = '';
 let savedFavorites = [];
 
-// Stili cromatici per i badge dei 10 distretti anatomici
 const CATEGORY_COLORS = {
     "Osteologia & Struttura Ossea": "text-cyanClin bg-cyanClin/10 border-cyanClin/30",
     "Terzo Inferiore & Mandibola": "text-emeraldClin bg-emeraldClin/10 border-emeraldClin/30",
@@ -45,13 +41,11 @@ const CATEGORY_COLORS = {
     "Voce, Olfatto & Tratti Secondari": "text-emeraldClin bg-emeraldClin/10 border-emeraldClin/30"
 };
 
-// ============================================================================
-// 1. INIZIALIZZAZIONE, LOCALSTORAGE E SCORCIATOIE DA TASTIERA
-// ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
     loadFavoritesFromStorage();
     initCounters();
     renderCategorySidebar();
+    renderHubDashboard();
     renderAllViews();
     setupKeyboardShortcuts();
     checkUrlHashOnLoad();
@@ -61,7 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', (e) => {
             globalSearchQuery = e.target.value.trim();
             updateClearButtonVisibility();
-            renderAllViews();
+            if (globalSearchQuery && currentMainView === 'panoramica') {
+                switchMainView('enciclopedia');
+            } else {
+                renderAllViews();
+            }
         });
     }
 });
@@ -69,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
         const searchInput = document.getElementById('global-search');
-        // Ctrl+K o Cmd+K attiva la barra di ricerca
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
             if (searchInput) {
@@ -77,7 +74,6 @@ function setupKeyboardShortcuts() {
                 searchInput.select();
             }
         }
-        // ESC pulisce la ricerca o chiude la sidebar mobile
         if (e.key === 'Escape') {
             if (globalSearchQuery !== '') {
                 resetFilters();
@@ -93,10 +89,9 @@ function setupKeyboardShortcuts() {
 function checkUrlHashOnLoad() {
     const hash = window.location.hash.replace('#', '');
     if (!hash) return;
-    if (['enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'].includes(hash)) {
+    if (['panoramica', 'enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'].includes(hash)) {
         switchMainView(hash);
     } else {
-        // Se l'hash è l'ID di una scheda specifica (es. #osteo-01), cercala
         const master = getMasterEncyclopedia();
         const found = master.find(item => item.id === hash);
         if (found) {
@@ -105,9 +100,6 @@ function checkUrlHashOnLoad() {
     }
 }
 
-// ============================================================================
-// 2. MOTORE DI RICERCA MULTI-TOKEN & EVIDENZIAZIONE TESTO (<mark>)
-// ============================================================================
 function matchesQuery(textToSearch, rawQuery) {
     if (!rawQuery) return true;
     const cleanText = textToSearch.toLowerCase();
@@ -115,7 +107,6 @@ function matchesQuery(textToSearch, rawQuery) {
 
     return tokens.every(token => {
         if (cleanText.includes(token)) return true;
-        // Verifica sinonimi semantici (slang -> scienza)
         for (const [slang, medicalTerms] of Object.entries(SEMANTIC_SYNONYMS)) {
             if (slang.includes(token) || token.includes(slang)) {
                 if (medicalTerms.some(med => cleanText.includes(med))) return true;
@@ -129,8 +120,6 @@ function highlightText(text, rawQuery) {
     if (!rawQuery || !text) return text;
     const tokens = rawQuery.trim().split(/\s+/).filter(t => t.length >= 2);
     if (tokens.length === 0) return text;
-
-    // Escape caratteri speciali regex
     const escapedTokens = tokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     const regex = new RegExp(`(${escapedTokens.join('|')})`, 'gi');
     return text.replace(regex, '<mark class="search-highlight">$1</mark>');
@@ -139,11 +128,13 @@ function highlightText(text, rawQuery) {
 function triggerQuickSearch(term) {
     const searchInput = document.getElementById('global-search');
     globalSearchQuery = term;
-    if (searchInput) {
-        searchInput.value = term;
-    }
+    if (searchInput) searchInput.value = term;
     updateClearButtonVisibility();
-    renderAllViews();
+    if (term && currentMainView === 'panoramica') {
+        switchMainView('enciclopedia');
+    } else {
+        renderAllViews();
+    }
 }
 
 function updateClearButtonVisibility() {
@@ -154,7 +145,7 @@ function updateClearButtonVisibility() {
 }
 
 // ============================================================================
-// 3. GESTIONE PREFERITI ("IL MIO PIANO DI STUDIO" IN LOCALSTORAGE)
+// PREFERITI (LOCALSTORAGE)
 // ============================================================================
 function loadFavoritesFromStorage() {
     try {
@@ -168,11 +159,8 @@ function loadFavoritesFromStorage() {
 
 function toggleFavorite(itemId) {
     const index = savedFavorites.indexOf(itemId);
-    if (index === -1) {
-        savedFavorites.push(itemId);
-    } else {
-        savedFavorites.splice(index, 1);
-    }
+    if (index === -1) savedFavorites.push(itemId);
+    else savedFavorites.splice(index, 1);
     try {
         localStorage.setItem('morpho_codex_favorites', JSON.stringify(savedFavorites));
     } catch (e) {}
@@ -182,9 +170,7 @@ function toggleFavorite(itemId) {
 
 function clearAllFavorites() {
     savedFavorites = [];
-    try {
-        localStorage.removeItem('morpho_codex_favorites');
-    } catch (e) {}
+    try { localStorage.removeItem('morpho_codex_favorites'); } catch (e) {}
     updateFavoriteCounters();
     renderAllViews();
 }
@@ -197,7 +183,7 @@ function updateFavoriteCounters() {
 }
 
 // ============================================================================
-// 4. CONTATORI, SIDEBAR E NAVIGAZIONE VISTE
+// CONTATORI, SIDEBAR E DASHBOARD PANORAMICA
 // ============================================================================
 function initCounters() {
     const master = getMasterEncyclopedia();
@@ -215,32 +201,68 @@ function initCounters() {
     updateFavoriteCounters();
 }
 
+function renderHubDashboard() {
+    const statsGrid = document.getElementById('hub-stats-grid');
+    const catsGrid = document.getElementById('hub-categories-grid');
+    const master = getMasterEncyclopedia();
+
+    if (statsGrid) {
+        const stats = [
+            { label: "Monografie Cliniche", val: master.length, color: "text-cyanClin", view: "enciclopedia" },
+            { label: "Angoli & Rapporti", val: (typeof ATLAS_38_RATIOS !== 'undefined' ? ATLAS_38_RATIOS.length : 38), color: "text-emeraldClin", view: "atlante" },
+            { label: "Risposte Rapide FAQ", val: (typeof FAQ_DATABASE_COMPLETE !== 'undefined' ? FAQ_DATABASE_COMPLETE.length : 15), color: "text-amberClin", view: "faq" },
+            { label: "Alert & Debunking", val: (typeof DEBUNKING_COMPLETE !== 'undefined' ? DEBUNKING_COMPLETE.length : 6), color: "text-roseClin", view: "debunking" }
+        ];
+        statsGrid.innerHTML = stats.map(s => `
+            <div onclick="switchMainView('${s.view}')" class="cursor-pointer bg-bgPanel border border-borderDark hover:border-cyanClin/40 rounded-xl p-5 transition">
+                <span class="font-mono text-3xl font-extrabold ${s.color}">${s.val}</span>
+                <p class="text-xs font-mono uppercase text-gray-400 mt-1">${s.label} →</p>
+            </div>
+        `).join('');
+    }
+
+    if (catsGrid) {
+        const categories = {};
+        master.forEach(item => {
+            if (!categories[item.category]) {
+                categories[item.category] = { count: 0, sample: item.title };
+            }
+            categories[item.category].count++;
+        });
+
+        catsGrid.innerHTML = Object.keys(categories).map(cat => {
+            const badgeStyle = CATEGORY_COLORS[cat] || "text-cyanClin bg-cyanClin/10 border-cyanClin/30";
+            return `
+                <div onclick="selectCategory('${cat.replace(/'/g, "\\'")}')" class="cursor-pointer bg-bgPanel border border-borderDark hover:border-cyanClin/50 rounded-xl p-5 flex items-center justify-between transition group">
+                    <div>
+                        <span class="font-mono text-[11px] px-2 py-0.5 rounded border ${badgeStyle}">${categories[cat].count} Monografie</span>
+                        <h3 class="text-base font-bold text-white mt-2 group-hover:text-cyanClin transition">${cat}</h3>
+                        <p class="text-xs text-gray-500 mt-1 truncate max-w-md">Es: ${categories[cat].sample}</p>
+                    </div>
+                    <span class="font-mono text-gray-500 group-hover:text-cyanClin text-lg transition">→</span>
+                </div>
+            `;
+        }).join('');
+    }
+}
+
 function toggleMobileSidebar() {
     const sidebar = document.getElementById('app-sidebar');
     const backdrop = document.getElementById('mobile-sidebar-backdrop');
     if (!sidebar || !backdrop) return;
-
     const isHidden = sidebar.classList.contains('-translate-x-full');
-    if (isHidden) {
-        sidebar.classList.remove('-translate-x-full');
-        backdrop.classList.remove('hidden');
-    } else {
-        sidebar.classList.add('-translate-x-full');
-        backdrop.classList.add('hidden');
-    }
+    sidebar.classList.toggle('-translate-x-full', !isHidden);
+    backdrop.classList.toggle('hidden', !isHidden);
 }
 
 function switchMainView(viewName) {
     currentMainView = viewName;
-    const views = ['enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'];
+    const views = ['panoramica', 'enciclopedia', 'atlante', 'faq', 'protocolli', 'debunking', 'preferiti'];
 
     views.forEach(v => {
         const section = document.getElementById(`view-${v}`);
         const navBtn = document.getElementById(`nav-${v}`);
-
-        if (section) {
-            section.classList.toggle('hidden', v !== viewName);
-        }
+        if (section) section.classList.toggle('hidden', v !== viewName);
 
         if (navBtn) {
             if (v === viewName) {
@@ -263,7 +285,6 @@ function switchMainView(viewName) {
         }
     });
 
-    // Chiudi drawer mobile se aperto
     const sidebar = document.getElementById('app-sidebar');
     if (sidebar && !sidebar.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
         toggleMobileSidebar();
@@ -293,11 +314,9 @@ function setApproachFilter(approach) {
     };
     Object.keys(btns).forEach(k => {
         if (!btns[k]) return;
-        if (k === approach) {
-            btns[k].className = "px-3 py-1 rounded-lg text-xs font-mono bg-cyanClin text-bgMain font-semibold transition";
-        } else {
-            btns[k].className = "px-3 py-1 rounded-lg text-xs font-mono text-gray-400 hover:text-white transition";
-        }
+        btns[k].className = k === approach
+            ? "px-3 py-1 rounded-lg text-xs font-mono bg-cyanClin text-bgMain font-semibold transition"
+            : "px-3 py-1 rounded-lg text-xs font-mono text-gray-400 hover:text-white transition";
     });
     renderEncyclopedia();
 }
@@ -333,7 +352,7 @@ function renderCategorySidebar() {
 }
 
 // ============================================================================
-// 5. BANNER DI RICERCA TRASVERSALE (OMNI-SEARCH CROSS-VIEW)
+// BANNER DI RICERCA TRASVERSALE
 // ============================================================================
 function renderCrossSearchBanner() {
     const banner = document.getElementById('cross-search-banner');
@@ -381,9 +400,6 @@ function renderCrossSearchBanner() {
     `;
 }
 
-// ============================================================================
-// 6. FUNZIONI DI RENDERING PER LE 6 SEZIONI
-// ============================================================================
 function renderAllViews() {
     initCounters();
     renderCrossSearchBanner();
@@ -395,14 +411,12 @@ function renderAllViews() {
     renderFavoritesView();
 }
 
-// Helper per generare l'HTML di una Card Enciclopedica
 function buildEncyclopediaCardHTML(item) {
     const badgeStyle = CATEGORY_COLORS[item.category] || "text-cyanClin bg-cyanClin/10 border-cyanClin/30";
     const isFav = savedFavorites.includes(item.id);
 
     return `
         <article id="${item.id}" class="bg-bgPanel border border-borderDark rounded-2xl p-6 sm:p-7 hover:border-borderDark/90 transition shadow-lg">
-            <!-- Header Card -->
             <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="font-mono text-[11px] px-2.5 py-1 rounded border ${badgeStyle}">
@@ -413,10 +427,10 @@ function buildEncyclopediaCardHTML(item) {
                     </span>
                 </div>
                 <div class="flex items-center space-x-2 no-print">
-                    <button onclick="copyCardLink('${item.id}')" class="px-2.5 py-1 rounded-lg bg-bgCard border border-borderDark hover:border-cyanClin/40 text-xs font-mono text-gray-400 hover:text-white transition" title="Copia link diretto a questa scheda">
+                    <button onclick="copyCardLink('${item.id}')" class="px-2.5 py-1 rounded-lg bg-bgCard border border-borderDark hover:border-cyanClin/40 text-xs font-mono text-gray-400 hover:text-white transition">
                         <span id="copy-label-${item.id}">🔗 Link</span>
                     </button>
-                    <button onclick="toggleFavorite('${item.id}')" class="px-2.5 py-1 rounded-lg border text-xs font-mono transition ${isFav ? 'bg-amberClin/15 border-amberClin/50 text-amberClin font-bold' : 'bg-bgCard border-borderDark text-gray-400 hover:text-amberClin'}" title="Salva nel Piano di Studio">
+                    <button onclick="toggleFavorite('${item.id}')" class="px-2.5 py-1 rounded-lg border text-xs font-mono transition ${isFav ? 'bg-amberClin/15 border-amberClin/50 text-amberClin font-bold' : 'bg-bgCard border-borderDark text-gray-400 hover:text-amberClin'}">
                         ${isFav ? '★ Salvato' : '☆ Salva'}
                     </button>
                 </div>
@@ -425,12 +439,10 @@ function buildEncyclopediaCardHTML(item) {
             <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">${highlightText(item.title, globalSearchQuery)}</h2>
             <p class="text-xs font-mono text-gray-400 mt-1 mb-4">${highlightText(item.subtitle, globalSearchQuery)}</p>
 
-            <!-- Sintesi Clinica -->
             <div class="p-4 rounded-xl bg-bgCard border border-borderDark/80 text-gray-200 text-sm leading-relaxed mb-5">
                 ${highlightText(item.summary, globalSearchQuery)}
             </div>
 
-            <!-- Approfondimento Anatomico Punti Chiave -->
             <div class="space-y-3 mb-6">
                 <h3 class="font-mono text-xs uppercase tracking-wider text-gray-400">Analisi Anatomica & Meccanismi Biologici:</h3>
                 <ul class="space-y-3">
@@ -450,7 +462,6 @@ function buildEncyclopediaCardHTML(item) {
                 </ul>
             </div>
 
-            <!-- Box Soluzioni / Protocollo -->
             <div class="p-4 rounded-xl bg-emeraldClin/5 border border-emeraldClin/25 text-xs sm:text-sm text-emerald-200 leading-relaxed">
                 <span class="font-mono text-xs uppercase font-bold text-emeraldClin block mb-1">Strategie di Ottimizzazione & Opzioni Cliniche:</span>
                 ${highlightText(item.solutions, globalSearchQuery)}
@@ -459,10 +470,10 @@ function buildEncyclopediaCardHTML(item) {
     `;
 }
 
-// --- A. RENDERING ENCICLOPEDIA ANATOMICA ---
 function renderEncyclopedia() {
     const grid = document.getElementById('encyclopedia-grid');
     const titleEl = document.getElementById('current-category-title');
+    const tocLinks = document.getElementById('encyclopedia-toc-links');
     if (!grid) return;
 
     const master = getMasterEncyclopedia();
@@ -475,16 +486,23 @@ function renderEncyclopedia() {
         const fullText = `${item.title} ${item.subtitle} ${item.category} ${item.summary} ${item.details.join(' ')} ${item.solutions}`;
         const matchesSearch = matchesQuery(fullText, globalSearchQuery);
 
-        // Filtro Softmax vs Hardmax
         let matchesApproach = true;
         if (currentApproachFilter === 'hardmax') {
-            matchesApproach = /chirurgi|osteotomi|le fort|bsso|impiant|rinoplastica|blefaroplastica|lip lift|trapianto|fue|filler|lipofilling/i.test(fullText);
+            matchesApproach = /chirurgi|osteotomi|le fort|bsso|impiant|rinoplastica|blefaroplastica|lip lift|trapianto|fue|filler|lipofilling|distrazione/i.test(fullText);
         } else if (currentApproachFilter === 'softmax') {
             matchesApproach = /protocollo|routine|postura|esercizi|dieta|sonno|topico|siero|shampoo|grooming|stubble|idratazione/i.test(fullText);
         }
 
         return matchesCat && matchesSearch && matchesApproach;
     });
+
+    if (tocLinks) {
+        tocLinks.innerHTML = filtered.map(item => `
+            <a href="#${item.id}" class="px-2.5 py-1 rounded bg-bgCard border border-borderDark hover:border-cyanClin text-xs text-gray-300 hover:text-cyanClin transition truncate max-w-xs">
+                ${item.title.split(':')[0]}
+            </a>
+        `).join('');
+    }
 
     if (filtered.length === 0) {
         grid.innerHTML = `
@@ -499,7 +517,6 @@ function renderEncyclopedia() {
     grid.innerHTML = filtered.map(item => buildEncyclopediaCardHTML(item)).join('');
 }
 
-// --- B. RENDERING ATLANTE DEI 38 RAPPORTI E ANGOLI ---
 function renderAtlas(levelFilter) {
     currentAtlasFilter = levelFilter || 'all';
     const tbody = document.getElementById('atlas-tbody');
@@ -537,15 +554,11 @@ function renderAtlas(levelFilter) {
     `).join('');
 }
 
-// --- C. RENDERING PRONTO SOCCORSO (FAQ) ---
 function renderFAQView() {
     const container = document.getElementById('faq-list');
     if (!container || typeof FAQ_DATABASE_COMPLETE === 'undefined') return;
 
-    const filtered = FAQ_DATABASE_COMPLETE.filter(f => {
-        const fullText = `${f.q} ${f.tag} ${f.a}`;
-        return matchesQuery(fullText, globalSearchQuery);
-    });
+    const filtered = FAQ_DATABASE_COMPLETE.filter(f => matchesQuery(`${f.q} ${f.tag} ${f.a}`, globalSearchQuery));
 
     if (filtered.length === 0) {
         container.innerHTML = `<div class="bg-bgPanel border border-borderDark rounded-xl p-8 text-center text-gray-400 text-sm">Nessuna FAQ trovata per "${globalSearchQuery}".</div>`;
@@ -571,20 +584,16 @@ function renderFAQView() {
 }
 
 function toggleAllFAQs(shouldOpen) {
-    document.querySelectorAll('.faq-item').forEach(el => {
-        el.open = shouldOpen;
-    });
+    document.querySelectorAll('.faq-item').forEach(el => { el.open = shouldOpen; });
 }
 
-// --- D. RENDERING GUIDE E PROTOCOLLI PRATICI ---
 function renderProtocolsView() {
     const container = document.getElementById('protocols-list');
     if (!container || typeof PROTOCOLS_COMPLETE === 'undefined') return;
 
     const filtered = PROTOCOLS_COMPLETE.filter(p => {
         const secText = p.sections.map(s => `${s.subtitle} ${s.items.join(' ')}`).join(' ');
-        const fullText = `${p.title} ${p.badge} ${p.desc} ${secText}`;
-        return matchesQuery(fullText, globalSearchQuery);
+        return matchesQuery(`${p.title} ${p.badge} ${p.desc} ${secText}`, globalSearchQuery);
     });
 
     container.innerHTML = filtered.map(prot => {
@@ -631,15 +640,11 @@ function renderProtocolsView() {
     }).join('');
 }
 
-// --- E. RENDERING DEBUNKING & ALERT MEDICI ---
 function renderDebunkingView() {
     const container = document.getElementById('debunking-list');
     if (!container || typeof DEBUNKING_COMPLETE === 'undefined') return;
 
-    const filtered = DEBUNKING_COMPLETE.filter(d => {
-        const fullText = `${d.title} ${d.riskLevel} ${d.myth} ${d.reality}`;
-        return matchesQuery(fullText, globalSearchQuery);
-    });
+    const filtered = DEBUNKING_COMPLETE.filter(d => matchesQuery(`${d.title} ${d.riskLevel} ${d.myth} ${d.reality}`, globalSearchQuery));
 
     container.innerHTML = filtered.map(item => `
         <div class="bg-bgPanel border border-roseClin/30 rounded-2xl p-6 sm:p-7">
@@ -664,7 +669,6 @@ function renderDebunkingView() {
     `).join('');
 }
 
-// --- F. RENDERING "IL MIO PIANO DI STUDIO" (PREFERITI SALVATI) ---
 function renderFavoritesView() {
     const container = document.getElementById('favorites-grid');
     if (!container) return;
@@ -690,9 +694,7 @@ function renderFavoritesView() {
     }
 
     let html = '';
-    if (favEncyclopedia.length > 0) {
-        html += favEncyclopedia.map(item => buildEncyclopediaCardHTML(item)).join('');
-    }
+    if (favEncyclopedia.length > 0) html += favEncyclopedia.map(item => buildEncyclopediaCardHTML(item)).join('');
     if (favProtocols.length > 0) {
         html += favProtocols.map(prot => `
             <div class="bg-bgPanel border border-amberClin/40 rounded-2xl p-6">
@@ -709,14 +711,9 @@ function renderFavoritesView() {
     container.innerHTML = html;
 }
 
-// ============================================================================
-// 7. UTILITY: COPIA LINK DIRETTO & RESET FILTRI
-// ============================================================================
 function copyCardLink(itemId) {
     const url = `${window.location.origin}${window.location.pathname}#${itemId}`;
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(url);
-    }
+    if (navigator.clipboard) navigator.clipboard.writeText(url);
     const label = document.getElementById(`copy-label-${itemId}`);
     if (label) {
         label.innerText = "✓ Copiato!";
