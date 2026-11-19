@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MORPHO CODEX | Enciclopedia Integrale di Morfologia Cranio-Facciale ed Estetica Clinica</title>
+    <title>MORPHO CODEX | Enciclopedia di Morfologia Facciale & Ottimizzazione Biologica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -16,11 +16,11 @@
                         mono: ['JetBrains Mono', 'monospace'],
                     },
                     colors: {
-                        bgMain: '#06070A',
-                        bgPanel: '#0C0E14',
-                        bgCard: '#12151F',
-                        bgHover: '#181C29',
-                        borderDark: '#1E2333',
+                        bgMain: '#050608',
+                        bgPanel: '#0A0D14',
+                        bgCard: '#10141D',
+                        bgHover: '#171C28',
+                        borderDark: '#1A2030',
                         cyanClin: '#38BDF8',
                         emeraldClin: '#10B981',
                         amberClin: '#F59E0B',
@@ -32,11 +32,11 @@
         }
     </script>
     <style>
-        body { background-color: #06070A; color: #F1F5F9; }
-        .glass-bar { background: rgba(12, 14, 20, 0.92); backdrop-filter: blur(16px); }
+        body { background-color: #050608; color: #F1F5F9; }
+        .glass-bar { background: rgba(10, 13, 20, 0.92); backdrop-filter: blur(16px); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #06070A; }
-        ::-webkit-scrollbar-thumb { background: #1E2333; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: #050608; }
+        ::-webkit-scrollbar-thumb { background: #1A2030; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #38BDF8; }
         mark.search-highlight {
             background-color: rgba(56, 189, 248, 0.28);
@@ -48,10 +48,10 @@
         .svg-point { cursor: pointer; transition: all 0.2s ease; }
         .svg-point:hover { r: 7; fill: #10B981; filter: drop-shadow(0 0 8px #38BDF8); }
         @media print {
-            header, aside, #quick-tags-bar, #cross-search-banner, .no-print { display: none !important; }
+            header, aside, #quick-tags-bar, .no-print { display: none !important; }
             main { margin-left: 0 !important; max-width: 100% !important; padding: 0 !important; }
             body { background: #ffffff !important; color: #000000 !important; }
-            article, .bg-bgPanel, .bg-bgCard { background: #ffffff !important; border: 1px solid #cccccc !important; color: #000000 !important; box-shadow: none !important; }
+            article, .bg-bgPanel, .bg-bgCard { background: #ffffff !important; border: 1px solid #cccccc !important; color: #000000 !important; }
         }
     </style>
 </head>
@@ -69,38 +69,35 @@
                 </div>
                 <div>
                     <span class="font-bold tracking-tight text-white text-base">MORPHO<span class="text-cyanClin">CODEX</span></span>
-                    <span class="hidden md:inline-block font-mono text-[10px] text-gray-400 ml-2 px-2 py-0.5 rounded bg-bgCard border border-borderDark uppercase">Enciclopedia Integrale v4.0</span>
+                    <span class="hidden md:inline-block font-mono text-[10px] text-gray-400 ml-2 px-2 py-0.5 rounded bg-bgCard border border-borderDark uppercase">Enciclopedia Clinica v5.0</span>
                 </div>
             </div>
         </div>
 
-        <!-- Barra di Ricerca Globale Avanzata (Ctrl+K) -->
+        <!-- Barra di Ricerca Globale (Ctrl+K) -->
         <div class="flex-1 max-w-2xl mx-3 sm:mx-6">
             <div class="relative flex items-center">
                 <svg class="w-4 h-4 text-gray-500 absolute left-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <input type="text" id="global-search" placeholder="Cerca termine anatomico, angolo, protocollo o attivo (es. Canthal Tilt, Tretinoina, Ioide, Le Fort...)" 
+                <input type="text" id="global-search" placeholder="Cerca termine anatomico, protocollo o attivo (es. Canthal Tilt, Tretinoina, Ioide, Le Fort...)" 
                     class="w-full bg-bgCard border border-borderDark rounded-xl pl-10 pr-28 py-2 text-xs sm:text-sm text-white placeholder-gray-500 focus:border-cyanClin focus:ring-1 focus:ring-cyanClin/30 focus:outline-none font-sans transition">
                 
                 <div class="absolute right-2.5 flex items-center space-x-1.5">
                     <span id="search-count" class="font-mono text-[11px] text-cyanClin font-semibold"></span>
-                    <button id="clear-search-btn" onclick="resetFilters()" class="hidden px-1.5 py-0.5 rounded bg-bgHover text-gray-400 hover:text-white text-xs font-mono" title="Cancella ricerca (ESC)">
-                        ✕
-                    </button>
+                    <button id="clear-search-btn" onclick="resetFilters()" class="hidden px-1.5 py-0.5 rounded bg-bgHover text-gray-400 hover:text-white text-xs font-mono" title="Cancella ricerca (ESC)">✕</button>
                     <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-gray-400 bg-bgPanel border border-borderDark rounded">Ctrl+K</kbd>
                 </div>
             </div>
         </div>
 
-        <!-- Azioni Rapide Destra -->
         <div class="flex items-center space-x-2.5">
-            <button onclick="switchMainView('preferiti')" class="px-3 py-1.5 rounded-lg bg-bgCard border border-borderDark hover:border-amberClin/50 text-xs font-mono text-gray-300 flex items-center space-x-1.5 transition" title="Voci salvate nel tuo Piano di Studio">
+            <button onclick="switchMainView('preferiti')" class="px-3 py-1.5 rounded-lg bg-bgCard border border-borderDark hover:border-amberClin/50 text-xs font-mono text-gray-300 flex items-center space-x-1.5 transition">
                 <span class="text-amberClin">★</span>
                 <span class="hidden sm:inline">Salvati</span>
                 <span id="count-fav-header" class="px-1.5 py-0.2 rounded bg-amberClin/15 text-amberClin font-bold">0</span>
             </button>
-            <button onclick="window.print()" class="hidden xl:flex px-3 py-1.5 rounded-lg bg-bgCard border border-borderDark hover:border-cyanClin/40 text-xs font-mono text-gray-400 hover:text-white items-center space-x-1 transition" title="Esporta o Stampa la vista attuale in PDF">
+            <button onclick="window.print()" class="hidden xl:flex px-3 py-1.5 rounded-lg bg-bgCard border border-borderDark hover:border-cyanClin/40 text-xs font-mono text-gray-400 hover:text-white items-center space-x-1 transition">
                 <span>⎙ PDF</span>
             </button>
         </div>
@@ -109,41 +106,31 @@
     <!-- OVERLAY MOBILE SIDEBAR -->
     <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/70 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
-    <!-- LAYOUT PRINCIPALE CON SIDEBAR E CONTENUTO -->
+    <!-- LAYOUT PRINCIPALE -->
     <div class="pt-16 flex-1 flex">
         
-        <!-- SIDEBAR SINISTRA FISSA -->
+        <!-- SIDEBAR -->
         <aside id="app-sidebar" class="w-72 fixed top-16 bottom-0 left-0 z-40 bg-bgPanel border-r border-borderDark overflow-y-auto p-5 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out">
-            
-            <!-- Sezione 1: Viste Principali -->
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-3">
-                    <p class="font-mono text-[11px] uppercase tracking-widest text-gray-500">Viste Principali</p>
+                    <p class="font-mono text-[11px] uppercase tracking-widest text-gray-500">Sezioni Principali</p>
                     <span class="font-mono text-[10px] text-emeraldClin bg-emeraldClin/10 px-2 py-0.5 rounded">100% Teoria</span>
                 </div>
                 <nav class="space-y-1.5" id="main-nav">
-                    <button onclick="switchMainView('panoramica')" id="nav-panoramica" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium bg-cyanClin/10 text-cyanClin border border-cyanClin/30 flex items-center justify-between transition">
-                        <span>0. Indice Generale & Hub</span>
-                        <span class="font-mono text-xs">HUB</span>
-                    </button>
-                    <button onclick="switchMainView('enciclopedia')" id="nav-enciclopedia" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition">
-                        <span>1. Enciclopedia Anatomica</span>
+                    <button onclick="switchMainView('enciclopedia')" id="nav-enciclopedia" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium bg-cyanClin/10 text-cyanClin border border-cyanClin/30 flex items-center justify-between transition">
+                        <span>1. Enciclopedia & FAQ Cliniche</span>
                         <span class="font-mono text-xs" id="count-enc">0</span>
                     </button>
                     <button onclick="switchMainView('atlante')" id="nav-atlante" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition">
                         <span>2. Atlante 38 Rapporti & SVG</span>
-                        <span class="font-mono text-xs" id="count-atl">38</span>
-                    </button>
-                    <button onclick="switchMainView('faq')" id="nav-faq" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition">
-                        <span>3. Pronto Soccorso (FAQ)</span>
-                        <span class="font-mono text-xs" id="count-faq">0</span>
+                        <span class="font-mono text-xs">38</span>
                     </button>
                     <button onclick="switchMainView('protocolli')" id="nav-protocolli" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-bgCard hover:text-white flex items-center justify-between transition">
-                        <span>4. Guide & Protocolli Pratici</span>
+                        <span>3. Protocolli & Guide Pratiche</span>
                         <span class="font-mono text-xs" id="count-prot">0</span>
                     </button>
                     <button onclick="switchMainView('debunking')" id="nav-debunking" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-roseClin/80 hover:bg-roseClin/10 hover:text-roseClin flex items-center justify-between transition">
-                        <span>5. Alert & Debunking Medico</span>
+                        <span>4. Alert & Debunking Medico</span>
                         <span class="font-mono text-xs" id="count-deb">0</span>
                     </button>
                     <button onclick="switchMainView('preferiti')" id="nav-preferiti" class="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-amberClin/80 hover:bg-amberClin/10 hover:text-amberClin flex items-center justify-between transition">
@@ -153,40 +140,17 @@
                 </nav>
             </div>
 
-            <!-- Sezione 2: Filtro Distretti Anatomici -->
+            <!-- Filtro Distretti Anatomici -->
             <div class="border-t border-borderDark pt-5">
                 <p class="font-mono text-[11px] uppercase tracking-widest text-gray-500 mb-3">Distretti Anatomici (10)</p>
-                <div class="space-y-1" id="category-sidebar">
-                    <!-- Popolato dinamicamente da app.js -->
-                </div>
-            </div>
-
-            <!-- Sezione 3: Legenda Clinica -->
-            <div class="border-t border-borderDark mt-6 pt-5 text-xs text-gray-500 space-y-2 font-mono">
-                <p class="uppercase text-[10px] tracking-wider text-gray-400">Legenda Evidenze</p>
-                <div class="flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-emeraldClin"></span>
-                    <span>Softmaxxing (Conservativo)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-cyanClin"></span>
-                    <span>Cefalometria & Anatomia</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-purpleClin"></span>
-                    <span>Chirurgia / Medicina Estetica</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-roseClin"></span>
-                    <span>Rischio Clinico / Debunked</span>
-                </div>
+                <div class="space-y-1" id="category-sidebar"></div>
             </div>
         </aside>
 
         <!-- CONTENUTO CENTRALE -->
         <main class="flex-1 lg:ml-72 p-4 sm:p-8 max-w-6xl mx-auto w-full">
             
-            <!-- BARRA TAG DI RICERCA RAPIDA -->
+            <!-- BARRA TAG RAPIDI -->
             <div id="quick-tags-bar" class="mb-6 pb-4 border-b border-borderDark">
                 <div class="flex items-center gap-2 overflow-x-auto pb-1">
                     <span class="font-mono text-[11px] text-gray-500 uppercase whitespace-nowrap mr-1">Ricerche Rapide:</span>
@@ -199,103 +163,45 @@
                     <button onclick="triggerQuickSearch('Potassio')" class="px-2.5 py-1 rounded-md bg-bgCard border border-borderDark hover:border-cyanClin text-xs font-mono text-gray-300 whitespace-nowrap transition">#Debloating4:1</button>
                     <button onclick="triggerQuickSearch('Minoxidil')" class="px-2.5 py-1 rounded-md bg-bgCard border border-borderDark hover:border-cyanClin text-xs font-mono text-gray-300 whitespace-nowrap transition">#Tricologia&AGA</button>
                     <button onclick="triggerQuickSearch('Collo')" class="px-2.5 py-1 rounded-md bg-bgCard border border-borderDark hover:border-cyanClin text-xs font-mono text-gray-300 whitespace-nowrap transition">#NeckTraining</button>
-                    <button onclick="triggerQuickSearch('Hedione')" class="px-2.5 py-1 rounded-md bg-bgCard border border-borderDark hover:border-cyanClin text-xs font-mono text-gray-300 whitespace-nowrap transition">#Hedione&Profumi</button>
                 </div>
             </div>
 
-            <!-- BANNER RISULTATI DI RICERCA TRASVERSALE -->
+            <!-- BANNER RISULTATI TRASVERSALI -->
             <div id="cross-search-banner" class="hidden mb-6 p-4 rounded-xl bg-cyanClin/5 border border-cyanClin/30">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <span class="font-mono text-xs text-cyanClin uppercase font-bold">Motore di Ricerca Globale Attivo</span>
-                        <p class="text-xs text-gray-300 mt-0.5">Risultati trovati in tutte le sezioni del Codex per <strong id="cross-search-term" class="text-white font-mono"></strong>:</p>
+                        <p class="text-xs text-gray-300 mt-0.5">Risultati trovati in tutte le sezioni per <strong id="cross-search-term" class="text-white font-mono"></strong>:</p>
                     </div>
                     <div id="cross-search-pills" class="flex flex-wrap gap-2"></div>
                 </div>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- VISTA 0: PANORAMICA & HUB DI NAVIGAZIONE                     -->
-            <!-- ============================================================ -->
-            <section id="view-panoramica" class="space-y-8">
-                <div class="bg-bgPanel border border-borderDark rounded-2xl p-6 sm:p-10 relative overflow-hidden">
-                    <div class="max-w-3xl">
-                        <span class="inline-block font-mono text-xs px-3 py-1 rounded bg-cyanClin/10 border border-cyanClin/30 text-cyanClin mb-4">
-                            COMPENDIO SCIENTIFICO DI MORFOLOGIA & ESTETICA
-                        </span>
-                        <h1 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight mb-4">
-                            La Bibbia dell'Anatomia Facciale e dell'Ottimizzazione Biologica.
-                        </h1>
-                        <p class="text-gray-400 text-base sm:text-lg leading-relaxed mb-8">
-                            Una piattaforma enciclopedica progettata per tradurre la cefalometria, l'oculoplastica, la dermatologia clinica e l'endocrinologia in conoscenza chiara, oggettiva e applicabile. Nessun caricamento foto, nessuna scansione automatica: solo teoria rigorosa e protocolli sicuri.
-                        </p>
-                        <div class="flex flex-wrap gap-3">
-                            <button onclick="switchMainView('enciclopedia')" class="px-5 py-3 rounded-xl bg-cyanClin text-bgMain font-bold text-sm hover:bg-sky-300 transition">
-                                Esplora i 10 Distretti Anatomici →
-                            </button>
-                            <button onclick="switchMainView('atlante')" class="px-5 py-3 rounded-xl bg-bgCard border border-borderDark text-white font-semibold text-sm hover:border-cyanClin/50 transition">
-                                Apri Mappa SVG & 38 Rapporti
-                            </button>
-                            <button onclick="switchMainView('faq')" class="px-5 py-3 rounded-xl bg-bgCard border border-borderDark text-amberClin font-semibold text-sm hover:border-amberClin/50 transition">
-                                Pronto Soccorso (FAQ)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Statistiche Database in Tempo Reale -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="hub-stats-grid">
-                    <!-- Popolato da app.js -->
-                </div>
-
-                <!-- Griglia Rapida dei 10 Distretti Anatomici -->
-                <div>
-                    <h2 class="text-xl font-bold text-white mb-1">Esplora per Distretto Anatomico e Clinico</h2>
-                    <p class="text-sm text-gray-400 mb-5">Clicca su una card per aprire direttamente tutte le monografie dedicate a quel distretto.</p>
-                    <div id="hub-categories-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Popolato da app.js -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- ============================================================ -->
-            <!-- VISTA 1: ENCICLOPEDIA ANATOMICA INTEGRALE                    -->
-            <!-- ============================================================ -->
-            <section id="view-enciclopedia" class="hidden space-y-6">
+            <!-- VISTA 1: ENCICLOPEDIA & FAQ CLINICHE UNIFICATE -->
+            <section id="view-enciclopedia" class="space-y-6">
                 <div class="border-b border-borderDark pb-5 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
-                        <span class="font-mono text-xs text-cyanClin uppercase tracking-widest">Modulo 01 • Compendio Teorico Integrale</span>
-                        <h1 class="text-2xl sm:text-3xl font-bold text-white mt-1" id="current-category-title">Tutti i Moduli Anatomici e Clinici</h1>
-                        <p class="text-gray-400 text-sm mt-1">Spiegazioni mediche, meccanismi biologici e opzioni correttive (conservative e chirurgiche) per ogni tratto.</p>
+                        <span class="font-mono text-xs text-cyanClin uppercase tracking-widest">Modulo 01 • Compendio Clinico & Diagnosi</span>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-white mt-1" id="current-category-title">Enciclopedia Anatomica e Q&A Clinico</h1>
+                        <p class="text-gray-400 text-sm mt-1">Trattati anatomici approfonditi e risposte diagnostiche integrate per ogni distretto facciale e corporeo.</p>
                     </div>
-                    <!-- Filtro Tipo di Approccio -->
                     <div class="flex flex-wrap gap-1.5 bg-bgPanel p-1.5 rounded-xl border border-borderDark w-fit">
                         <button onclick="setApproachFilter('all')" id="btn-app-all" class="px-3 py-1 rounded-lg text-xs font-mono bg-cyanClin text-bgMain font-semibold transition">Tutti</button>
-                        <button onclick="setApproachFilter('softmax')" id="btn-app-softmax" class="px-3 py-1 rounded-lg text-xs font-mono text-gray-400 hover:text-white transition">Softmax (Non-Invasivo)</button>
-                        <button onclick="setApproachFilter('hardmax')" id="btn-app-hardmax" class="px-3 py-1 rounded-lg text-xs font-mono text-gray-400 hover:text-white transition">Chirurgia / Clinica</button>
+                        <button onclick="setApproachFilter('softmax')" id="btn-app-softmax" class="px-3 py-1 rounded-lg text-xs font-mono text-gray-400 hover:text-white transition">Softmax</button>
+                        <button onclick="setApproachFilter('hardmax')" id="btn-app-hardmax" class="px-3 py-1 rounded-lg text-xs font-mono text-gray-400 hover:text-white transition">Chirurgia</button>
                     </div>
                 </div>
 
-                <!-- Indice Rapido delle Schede Visibili -->
-                <div id="encyclopedia-toc" class="bg-bgPanel border border-borderDark rounded-xl p-4">
-                    <span class="font-mono text-[11px] uppercase text-gray-400 block mb-2">Indice delle Monografie in questa vista:</span>
-                    <div id="encyclopedia-toc-links" class="flex flex-wrap gap-2"></div>
-                </div>
-
-                <div id="encyclopedia-grid" class="space-y-6">
-                    <!-- Popolato da app.js -->
-                </div>
+                <div id="encyclopedia-grid" class="space-y-6"></div>
             </section>
 
-            <!-- ============================================================ -->
-            <!-- VISTA 2: ATLANTE DEI 38 RAPPORTI + MAPPA SVG CRANIOMETRICA   -->
-            <!-- ============================================================ -->
+            <!-- VISTA 2: ATLANTE DEI 38 RAPPORTI & MAPPA SVG -->
             <section id="view-atlante" class="hidden space-y-8">
                 <div class="border-b border-borderDark pb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div>
                         <span class="font-mono text-xs text-emeraldClin uppercase tracking-widest">Modulo 02 • Antropometria & Cefalometria</span>
                         <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Atlante dei 38 Rapporti e Mappa Craniometrica Interattiva</h2>
-                        <p class="text-gray-400 text-sm mt-1">Clicca sui punti di repere anatomici nel diagramma vettoriale o filtra la tabella per esplorare gli angoli ideali.</p>
+                        <p class="text-gray-400 text-sm mt-1">Clicca sui punti di repere nel diagramma vettoriale o filtra la tabella per esplorare gli angoli ideali.</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <button onclick="renderAtlas('all')" class="px-3 py-1.5 rounded-lg bg-bgCard border border-borderDark text-xs font-mono hover:border-cyanClin">Tutti (38)</button>
@@ -305,73 +211,48 @@
                     </div>
                 </div>
 
-                <!-- MAPPA VETTORIALE SVG DEI PUNTI DI REPERE CRANIOMETRICI -->
                 <div class="bg-bgPanel border border-borderDark rounded-2xl p-6">
                     <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-2">
                         <div>
-                            <h3 class="text-base font-bold text-white font-mono uppercase tracking-wider">Mappa Interattiva dei Punti di Repere Cefalometrici</h3>
-                            <p class="text-xs text-gray-400">Clicca su un punto anatomico (es. <span class="text-cyanClin font-mono">Gonion, Nasion, Pogonion, Ioide</span>) per filtrare istantaneamente la tabella sottostante.</p>
+                            <h3 class="text-base font-bold text-white font-mono uppercase tracking-wider">Mappa Interattiva dei Punti di Repere</h3>
+                            <p class="text-xs text-gray-400">Clicca su un punto anatomico per filtrare la tabella sottostante.</p>
                         </div>
                         <button onclick="triggerQuickSearch('')" class="px-3 py-1 rounded bg-bgCard border border-borderDark text-xs font-mono text-gray-400 hover:text-white">Reset Filtro SVG</button>
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                        <!-- SVG 1: Norma Frontalis -->
                         <div class="bg-bgCard border border-borderDark rounded-xl p-4 flex flex-col items-center">
-                            <span class="font-mono text-[11px] text-gray-400 uppercase mb-2">Norma Frontalis (Proporzioni Orizzontali & fWHR)</span>
+                            <span class="font-mono text-[11px] text-gray-400 uppercase mb-2">Norma Frontalis</span>
                             <svg viewBox="0 0 260 300" class="w-full max-w-[260px] h-auto">
                                 <path d="M55,95 C50,35 210,35 205,95 C212,135 208,165 198,195 C192,225 165,265 130,270 C95,265 68,225 62,195 C52,165 48,135 55,95 Z" fill="#0C0E14" stroke="#334155" stroke-width="2"/>
                                 <line x1="53" y1="150" x2="207" y2="150" stroke="#38BDF8" stroke-width="1.2" stroke-dasharray="4,3"/>
                                 <line x1="68" y1="215" x2="192" y2="215" stroke="#10B981" stroke-width="1.2" stroke-dasharray="4,3"/>
-                                <line x1="95" y1="125" x2="165" y2="125" stroke="#A855F7" stroke-width="1.5"/>
-                                <ellipse cx="95" cy="125" rx="18" ry="8" fill="none" stroke="#475569" stroke-width="1.5"/>
-                                <ellipse cx="165" cy="125" rx="18" ry="8" fill="none" stroke="#475569" stroke-width="1.5"/>
-                                <circle onclick="triggerQuickSearch('Thirds')" cx="130" cy="58" r="5" fill="#38BDF8" class="svg-point"><title>Trichion (Terzo Superiore)</title></circle>
-                                <circle onclick="triggerQuickSearch('Glabella')" cx="130" cy="108" r="5" fill="#38BDF8" class="svg-point"><title>Glabella / Nasion</title></circle>
-                                <circle onclick="triggerQuickSearch('ESR')" cx="95" cy="125" r="5" fill="#A855F7" class="svg-point"><title>Pupilla / IPD (ESR)</title></circle>
-                                <circle onclick="triggerQuickSearch('Canthal')" cx="77" cy="123" r="4.5" fill="#F59E0B" class="svg-point"><title>Canto Laterale (Canthal Tilt)</title></circle>
-                                <circle onclick="triggerQuickSearch('Bizygomatic')" cx="53" cy="150" r="5.5" fill="#38BDF8" class="svg-point"><title>Zygion Sinistro (fWHR)</title></circle>
-                                <circle onclick="triggerQuickSearch('Bizygomatic')" cx="207" cy="150" r="5.5" fill="#38BDF8" class="svg-point"><title>Zygion Destro (fWHR)</title></circle>
-                                <circle onclick="triggerQuickSearch('Subnasale')" cx="130" cy="175" r="5" fill="#F59E0B" class="svg-point"><title>Subnasale</title></circle>
-                                <circle onclick="triggerQuickSearch('Bigonial')" cx="68" cy="215" r="5.5" fill="#10B981" class="svg-point"><title>Gonion Sinistro (Bigonial Width)</title></circle>
-                                <circle onclick="triggerQuickSearch('Bigonial')" cx="192" cy="215" r="5.5" fill="#10B981" class="svg-point"><title>Gonion Destro (Bigonial Width)</title></circle>
-                                <circle onclick="triggerQuickSearch('Philtrum')" cx="130" cy="268" r="5" fill="#10B981" class="svg-point"><title>Menton</title></circle>
+                                <circle onclick="triggerQuickSearch('Thirds')" cx="130" cy="58" r="5" fill="#38BDF8" class="svg-point"><title>Trichion</title></circle>
+                                <circle onclick="triggerQuickSearch('Glabella')" cx="130" cy="108" r="5" fill="#38BDF8" class="svg-point"><title>Glabella</title></circle>
+                                <circle onclick="triggerQuickSearch('Bizygomatic')" cx="53" cy="150" r="5.5" fill="#38BDF8" class="svg-point"><title>Zygion</title></circle>
+                                <circle onclick="triggerQuickSearch('Bizygomatic')" cx="207" cy="150" r="5.5" fill="#38BDF8" class="svg-point"><title>Zygion</title></circle>
+                                <circle onclick="triggerQuickSearch('Bigonial')" cx="68" cy="215" r="5.5" fill="#10B981" class="svg-point"><title>Gonion</title></circle>
+                                <circle onclick="triggerQuickSearch('Bigonial')" cx="192" cy="215" r="5.5" fill="#10B981" class="svg-point"><title>Gonion</title></circle>
                                 <text x="138" y="61" fill="#94A3B8" font-size="9" font-family="monospace">Trichion</text>
-                                <text x="138" y="111" fill="#38BDF8" font-size="9" font-family="monospace">Glabella/Nasion</text>
-                                <text x="60" y="145" fill="#38BDF8" font-size="9" font-family="monospace">Bizygomatic (fWHR)</text>
-                                <text x="78" y="210" fill="#10B981" font-size="9" font-family="monospace">Bigonial Width</text>
-                                <text x="138" y="266" fill="#10B981" font-size="9" font-family="monospace">Menton</text>
+                                <text x="60" y="145" fill="#38BDF8" font-size="9" font-family="monospace">Bizygomatic</text>
+                                <text x="78" y="210" fill="#10B981" font-size="9" font-family="monospace">Bigonial</text>
                             </svg>
                         </div>
-
-                        <!-- SVG 2: Norma Lateralis -->
                         <div class="bg-bgCard border border-borderDark rounded-xl p-4 flex flex-col items-center">
-                            <span class="font-mono text-[11px] text-gray-400 uppercase mb-2">Norma Lateralis (Piano di Francoforte & Angolo Goniale)</span>
+                            <span class="font-mono text-[11px] text-gray-400 uppercase mb-2">Norma Lateralis</span>
                             <svg viewBox="0 0 260 300" class="w-full max-w-[260px] h-auto">
                                 <path d="M80,50 C145,45 190,65 195,105 L190,122 L218,162 L198,172 L203,188 L195,198 L202,212 L198,245 C195,255 170,255 135,248 L115,215 L75,205 C50,170 45,100 80,50 Z" fill="#0C0E14" stroke="#334155" stroke-width="2"/>
                                 <line x1="65" y1="142" x2="225" y2="142" stroke="#F59E0B" stroke-width="1.3" stroke-dasharray="5,3"/>
-                                <line x1="115" y1="155" x2="115" y2="215" stroke="#10B981" stroke-width="2"/>
-                                <line x1="115" y1="215" x2="198" y2="245" stroke="#10B981" stroke-width="2"/>
-                                <line x1="198" y1="245" x2="145" y2="255" stroke="#A855F7" stroke-width="1.5" stroke-dasharray="3,2"/>
-                                <line x1="145" y1="255" x2="140" y2="290" stroke="#A855F7" stroke-width="1.5" stroke-dasharray="3,2"/>
-                                <circle onclick="triggerQuickSearch('Francoforte')" cx="85" cy="142" r="5" fill="#F59E0B" class="svg-point"><title>Porion / Trago (Piano di Francoforte)</title></circle>
-                                <circle onclick="triggerQuickSearch('Vettore')" cx="178" cy="142" r="5" fill="#F59E0B" class="svg-point"><title>Orbitale (Vettore Orbitale)</title></circle>
-                                <circle onclick="triggerQuickSearch('Nasofrontal')" cx="190" cy="122" r="5" fill="#38BDF8" class="svg-point"><title>Nasion / Radix</title></circle>
-                                <circle onclick="triggerQuickSearch('Goode')" cx="218" cy="162" r="5" fill="#38BDF8" class="svg-point"><title>Pronasale (Metodo di Goode)</title></circle>
-                                <circle onclick="triggerQuickSearch('Goniale')" cx="115" cy="215" r="6" fill="#10B981" class="svg-point"><title>Gonion (Angolo Goniale)</title></circle>
-                                <circle onclick="triggerQuickSearch('Convessità')" cx="198" cy="245" r="5.5" fill="#10B981" class="svg-point"><title>Pogonion (Proiezione Mento)</title></circle>
+                                <circle onclick="triggerQuickSearch('Francoforte')" cx="85" cy="142" r="5" fill="#F59E0B" class="svg-point"><title>Trago</title></circle>
+                                <circle onclick="triggerQuickSearch('Goniale')" cx="115" cy="215" r="6" fill="#10B981" class="svg-point"><title>Gonion</title></circle>
                                 <circle onclick="triggerQuickSearch('Cervico')" cx="145" cy="255" r="5" fill="#A855F7" class="svg-point"><title>Osso Ioide</title></circle>
-                                <text x="65" y="135" fill="#F59E0B" font-size="8.5" font-family="monospace">Piano di Francoforte</text>
-                                <text x="148" y="118" fill="#38BDF8" font-size="8.5" font-family="monospace">Nasion</text>
-                                <text x="68" y="222" fill="#10B981" font-size="9" font-family="monospace">Gonion (120°)</text>
-                                <text x="205" y="248" fill="#10B981" font-size="8.5" font-family="monospace">Pogonion</text>
+                                <text x="65" y="135" fill="#F59E0B" font-size="8.5" font-family="monospace">Francoforte</text>
+                                <text x="68" y="222" fill="#10B981" font-size="9" font-family="monospace">Gonion</text>
                                 <text x="152" y="268" fill="#A855F7" font-size="8.5" font-family="monospace">Osso Ioide</text>
                             </svg>
                         </div>
                     </div>
                 </div>
 
-                <!-- TABELLA DEI 38 RAPPORTI -->
                 <div class="overflow-x-auto rounded-xl border border-borderDark bg-bgPanel">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -387,61 +268,35 @@
                 </div>
             </section>
 
-            <!-- ============================================================ -->
-            <!-- VISTA 3: PRONTO SOCCORSO ESTETICO (FAQ)                      -->
-            <!-- ============================================================ -->
-            <section id="view-faq" class="hidden space-y-6">
-                <div class="border-b border-borderDark pb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                    <div>
-                        <span class="font-mono text-xs text-amberClin uppercase tracking-widest">Modulo 03 • Risposte Cliniche Pronte</span>
-                        <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Pronto Soccorso Estetico & Diagnosi Differenziale</h2>
-                        <p class="text-gray-400 text-sm mt-1">Risposte pronte e rigorose ai dubbi più frequenti su asimmetrie, difetti percepiti e falsi miti.</p>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="toggleAllFAQs(true)" class="px-3 py-1.5 rounded-lg bg-bgCard border border-borderDark text-xs font-mono text-gray-300 hover:text-white">Espandi Tutte</button>
-                        <button onclick="toggleAllFAQs(false)" class="px-3 py-1.5 rounded-lg bg-bgCard border border-borderDark text-xs font-mono text-gray-300 hover:text-white">Chiudi Tutte</button>
-                    </div>
-                </div>
-                <div id="faq-list" class="space-y-4"></div>
-            </section>
-
-            <!-- ============================================================ -->
-            <!-- VISTA 4: GUIDE PRATICHE E PROTOCOLLI OPERATIVI               -->
-            <!-- ============================================================ -->
+            <!-- VISTA 3: PROTOCOLLI & GUIDE PRATICHE -->
             <section id="view-protocolli" class="hidden space-y-6">
                 <div class="border-b border-borderDark pb-5">
-                    <span class="font-mono text-xs text-cyanClin uppercase tracking-widest">Modulo 04 • Manuali Step-by-Step</span>
-                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Guide Pratiche di Miglioramento Personale</h2>
-                    <p class="text-gray-400 text-sm mt-1">Protocolli giornalieri e settimanali strutturati: Debloating in 41 punti, Skincare, Miofunzione, Haircare, Postura, Collo, Sonno e Voce.</p>
+                    <span class="font-mono text-xs text-cyanClin uppercase tracking-widest">Modulo 03 • Manuali Step-by-Step</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Guide Pratiche & Protocolli Operativi</h2>
+                    <p class="text-gray-400 text-sm mt-1">Protocolli strutturati per il debloating, la skincare clinica, la miofunzione e il sonno.</p>
                 </div>
                 <div id="protocols-list" class="space-y-8"></div>
             </section>
 
-            <!-- ============================================================ -->
-            <!-- VISTA 5: DEBUNKING & SICUREZZA MEDICA                        -->
-            <!-- ============================================================ -->
+            <!-- VISTA 4: DEBUNKING & SICUREZZA MEDICA -->
             <section id="view-debunking" class="hidden space-y-6">
                 <div class="border-b border-borderDark pb-5">
-                    <span class="font-mono text-xs text-roseClin uppercase tracking-widest">Modulo 05 • Prevenzione Danni & Valutazione Clinica</span>
+                    <span class="font-mono text-xs text-roseClin uppercase tracking-widest">Modulo 04 • Prevenzione Danni & Sicurezza</span>
                     <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">Debunking della "Bro-Science" e Pratiche ad Alto Rischio</h2>
-                    <p class="text-gray-400 text-sm mt-1">Analisi medica oggettiva del perché molte pratiche estreme diffuse sui forum causano danni irreversibili o inestetismi peggiori.</p>
+                    <p class="text-gray-400 text-sm mt-1">Analisi medica oggettiva del perché molte pratiche estreme diffuse sui forum causano danni irreversibili.</p>
                 </div>
                 <div id="debunking-list" class="grid grid-cols-1 gap-6"></div>
             </section>
 
-            <!-- ============================================================ -->
-            <!-- VISTA 6: IL MIO PIANO DI STUDIO (SEGNALIBRI SALVATI)         -->
-            <!-- ============================================================ -->
+            <!-- VISTA 5: IL MIO PIANO DI STUDIO (SEGNALIBRI) -->
             <section id="view-preferiti" class="hidden space-y-6">
                 <div class="border-b border-borderDark pb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                     <div>
                         <span class="font-mono text-xs text-amberClin uppercase tracking-widest">Modulo Personale • LocalStorage</span>
                         <h2 class="text-2xl sm:text-3xl font-bold text-white mt-1">★ Il Mio Piano di Studio Anatomico</h2>
-                        <p class="text-gray-400 text-sm mt-1">Tutte le schede enciclopediche e i protocolli che hai contrassegnato con la stella per una consultazione rapida.</p>
+                        <p class="text-gray-400 text-sm mt-1">Tutte le schede enciclopediche e i protocolli che hai contrassegnato con la stella.</p>
                     </div>
-                    <button onclick="clearAllFavorites()" class="px-3 py-1.5 rounded-lg bg-roseClin/10 border border-roseClin/30 text-roseClin text-xs font-mono hover:bg-roseClin/20 transition">
-                        Svuota Salvati
-                    </button>
+                    <button onclick="clearAllFavorites()" class="px-3 py-1.5 rounded-lg bg-roseClin/10 border border-roseClin/30 text-roseClin text-xs font-mono hover:bg-roseClin/20 transition">Svuota Salvati</button>
                 </div>
                 <div id="favorites-grid" class="space-y-6"></div>
             </section>
@@ -449,10 +304,11 @@
         </main>
     </div>
 
-    <!-- Importazione Modulare dei Database e Logica -->
     <script src="data-part1.js"></script>
     <script src="data-part2.js"></script>
     <script src="data-part3.js"></script>
+    <script src="data-part4.js"></script>
+    <script src="data-part5.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
